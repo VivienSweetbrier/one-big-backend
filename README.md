@@ -21,6 +21,7 @@
 | **Module 5: The Universal Undo Button (Freemium Web SaaS)** | [`obb-undo/`](./obb-undo) | `5060` | Self-serve **Freemium** web app (`Tier 0: Community Free Forever` -> `Tier 1: Co-op Pro Merge-Guard` -> `Tier 2: Multi-Site Patron`) giving spreadsheets and business tables 1-Click Time-Travel Undo and Formula-Clobber shields. |
 | **Module 6: Bayesian $M/G/c$ Queue & Demand Verifier** | [`bayesian_queue.py`](./bayesian_queue.py) | Integrated in `5057` | Integrates [`VivienSweetbrier/bayesian-queue`](https://github.com/VivienSweetbrier/bayesian-queue): models non-memoryless, heavy-tailed Weibull ($k < 1$) service times and Poisson arrivals to compute posterior traffic intensity $\rho = \frac{\lambda}{c \cdot \mu}$, flag saturation risk $P(\rho \ge 1.0)$, and provide **1-Click Bayesian Auto-Staffing** (`⚡ Auto-staff to c*`). |
 | **Module 7: K–8 Child Threat-Recognition & Cybersafety Floor** | [`obb-safety-floor/`](./obb-safety-floor) | `5061` | **100% Parent-Auditable, Zero-Student-PII** social safety & behavioural threat-recognition curriculum floor for Catholic & public school divisions. Enforces Manitoba FIPPA, Federal PIPEDA, and Archdiocesan Safe Environment rules (`script-src 'none'` CSP, zero student accounts, SHA-256 Git curriculum seal, and 1-Click Curriculum Undo). |
+| **Module 8: Winnipeg Walk-In Demo Switchboard** | [`obb_hub.py`](./obb_hub.py) | `5050` | **Single-command launcher** (`python obb_hub.py`) that seeds and boots all 5 web services (`5057`–`5061`) and serves a unified 1-click persona switchboard for in-person demos with parishes, Jesuit colleges, schools, co-ops, and independent shops. |
 
 ---
 
@@ -38,6 +39,12 @@ Every operational mutation across Scheduling, Grants, and Library — adding or 
 ## Quickstart (Run Locally in 60 Seconds)
 
 Requirements: Python 3.10+ and `flask` (`pip install flask gunicorn`).
+
+### 0. Launch All 5 Services + Walk-In Demo Switchboard in One Command (`Port 5050`)
+```bash
+python obb_hub.py
+# Then open http://127.0.0.1:5050 in your browser!
+```
 
 ### 1. Run the Complete Verification Suite (All 55+ Checks)
 ```bash

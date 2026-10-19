@@ -252,6 +252,26 @@ def test_child_safety_floor_and_cybersafety_shield():
     print("  -> [PASSED] 1-Click Curriculum Undo restored exact Parent-Approved Baseline Seal!")
 
 
+def test_walk_in_demo_hub():
+    print("\n=== [TEST 7] Module 8 (obb_hub.py): Winnipeg Walk-In Demo Switchboard & Bit-Rot Embed ===")
+    # Also verify the St. Ignatius bit-rot rescue embed widget on obb-library
+    lib_dir = os.path.join(ROOT_DIR, "obb-library")
+    lib_app = load_module_from_dir(lib_dir, "lib_app_embed")
+    lib_app.app.config["TESTING"] = True
+    lib_client = lib_app.app.test_client()
+    r_embed = lib_client.get("/lib/1/embed")
+    assert r_embed.status_code == 200 and b"925 Jessie Ave" in r_embed.data
+    print("  -> Verified St. Ignatius 925 Jessie Ave Bit-Rot-Proof /lib/1/embed widget renders cleanly")
+
+    import obb_hub
+    obb_hub.app.config["TESTING"] = True
+    hub_client = obb_hub.app.test_client()
+    r_hub = hub_client.get("/")
+    assert r_hub.status_code == 200 and b"Winnipeg Walk-In Demo Switchboard" in r_hub.data
+    assert b"Catholic Grace" in r_hub.data and b"925 Jessie Ave" in r_hub.data
+    print("  -> [PASSED] Walk-In Demo Switchboard (http://127.0.0.1:5050) verified!")
+
+
 if __name__ == "__main__":
     test_scheduling_nuke_and_undo()
     test_grants_revision_and_undo()
@@ -259,5 +279,7 @@ if __name__ == "__main__":
     test_freemium_universal_undo_saas()
     test_bayesian_queue_forecasting_and_autostaff()
     test_child_safety_floor_and_cybersafety_shield()
-    print("\n🧦⚙️🧦 ALL 7 MODULES + BAYESIAN QUEUE + ZERO-PII CYBERSAFETY SHIELD PASSED! NOTHING CAN UNPLUG IT! 🧦⚙️🧦")
+    test_walk_in_demo_hub()
+    print("\n🧦⚙️🧦 ALL 8 MODULES + WALK-IN DEMO SWITCHBOARD PASSED! NOTHING CAN UNPLUG IT! 🧦⚙️🧦")
+
 
