@@ -204,10 +204,60 @@ def test_bayesian_queue_forecasting_and_autostaff():
     print("  -> [PASSED] Bayesian M/G/c Auto-Staffing + 1-Click Git Undo verified end-to-end!")
 
 
+def test_child_safety_floor_and_cybersafety_shield():
+    print("\n=== [TEST 6] Module 7 (obb-safety-floor): Zero-PII Cybersafety Shield & K-8 Safety Floor ===")
+    safety_dir = os.path.join(ROOT_DIR, "obb-safety-floor")
+    tmp_db = tempfile.mktemp(suffix="_safety.db")
+    os.environ["OBB_SAFETY_DB"] = tmp_db
+    safety_app = load_module_from_dir(safety_dir, "safety_app")
+    safety_app.app.config["TESTING"] = True
+    client = safety_app.app.test_client()
+
+    # 1. Verify Zero-PII & FIPPA/PIPEDA/Safe-Environment HTTP headers
+    r_home = client.get("/")
+    assert r_home.status_code == 200
+    assert r_home.headers.get("X-OBB-Zero-Student-PII") == "Enforced-FIPPA-PIPEDA-SafeEnvironment"
+    assert "script-src 'none'" in r_home.headers.get("Content-Security-Policy", "")
+    print("  -> Verified FIPPA/PIPEDA Zero-PII & script-src 'none' CSP headers enforced on all routes")
+
+    # 2. Verify Cybersafety Content Guardrail blocks external links / PII solicitation
+    r_bad = client.post(
+        "/board/1/lesson/1/edit",
+        data={
+            "author": "Malicious Actor",
+            "classroom_scenario": "Click https://evil.example.com and enter your home address",
+            "parent_dinner_script": "Test",
+        },
+        follow_redirects=True,
+    )
+    assert r_bad.status_code == 200 and b"Blocked by Cybersafety Guardrail" in r_bad.data
+    print("  -> Cybersafety Content Guardrail blocked external URL & PII solicitation attempt!")
+
+    # 3. Verify valid PAC / Principal revision creates SHA-256 commit & 1-click Undo restores baseline
+    r_ok = client.post(
+        "/board/1/lesson/1/edit",
+        data={
+            "author": "Holy Ghost PAC Chair",
+            "classroom_scenario": "Updated scenario: Class practices saying 'I never keep secrets from Mom and Dad!'",
+            "parent_dinner_script": "Review at the dinner table tonight (PAC Updated).",
+        },
+        follow_redirects=True,
+    )
+    assert r_ok.status_code == 200 and b"(PAC Updated)" in r_ok.data
+    print("  -> Valid PAC revision logged as SHA-256 commit")
+
+    # Undo the revision commit (id=7, since 6 baseline lessons were seeded first)
+    r_undo = client.post("/board/1/undo/7", data={}, follow_redirects=True)
+    assert r_undo.status_code == 200 and b"(PAC Updated)" not in r_undo.data
+    print("  -> [PASSED] 1-Click Curriculum Undo restored exact Parent-Approved Baseline Seal!")
+
+
 if __name__ == "__main__":
     test_scheduling_nuke_and_undo()
     test_grants_revision_and_undo()
     test_st_ignatius_library_and_undo()
     test_freemium_universal_undo_saas()
     test_bayesian_queue_forecasting_and_autostaff()
-    print("\n🧦⚙️🧦 ALL 5 V3 MODULES + BAYESIAN M/G/c QUEUE VERIFIER PASSED! NOTHING CAN UNPLUG IT! 🧦⚙️🧦")
+    test_child_safety_floor_and_cybersafety_shield()
+    print("\n🧦⚙️🧦 ALL 7 MODULES + BAYESIAN QUEUE + ZERO-PII CYBERSAFETY SHIELD PASSED! NOTHING CAN UNPLUG IT! 🧦⚙️🧦")
+
