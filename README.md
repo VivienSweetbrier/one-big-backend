@@ -18,6 +18,7 @@
 | **Module 2: Co-op Grant Pipeline** | [`obb-grants/`](./obb-grants) | `5058` | Multi-tenant opportunity tracker, 30/7/1-day deadline reminders, shared boilerplate library, collaborative application drafter, CSV budget importer, **and V3 Section Revision Git History + 1-Click Undo**. |
 | **Module 3: Parish & Community Lending Library** | [`obb-library/`](./obb-library) | `5059` | Searchable online catalog, quick borrower checkout/return, automatic overdue detection, **and 1-Click Git Undo** (built initially for the St. Ignatius Spiritual Education Centre Lending Library & Holy Rosary bilingual shelf). |
 | **Module 4: Universal Semantic Git Engine** | [`obbe_semantic_git.py`](./obbe_semantic_git.py) | CLI / Lib | Format-specific 3-way structural merge & formula-clobber guard for spreadsheets (`.xlsx`/`.csv`), POS/dispatch `.json`, and SQLite tables. |
+| **Module 5: The Universal Undo Button (Freemium Web SaaS)** | [`obb-undo/`](./obb-undo) | `5060` | Self-serve **Freemium** web app (`Tier 0: Community Free Forever` -> `Tier 1: Co-op Pro Merge-Guard` -> `Tier 2: Multi-Site Patron`) giving spreadsheets and business tables 1-Click Time-Travel Undo and Formula-Clobber shields. |
 
 ---
 

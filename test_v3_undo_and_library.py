@@ -137,8 +137,37 @@ def test_st_ignatius_library_and_undo():
     print("  -> [PASSED] Library checkout 1-click undone and copy availability restored!")
 
 
+def test_freemium_universal_undo_saas():
+    print("\n=== [TEST 4] Module 5 (obb-undo): Freemium 'Universal Undo Button' SaaS ===")
+    undo_dir = os.path.join(ROOT_DIR, "obb-undo")
+    tmp_db = tempfile.mktemp(suffix="_undo.db")
+    os.environ["OBB_UNDO_DB"] = tmp_db
+    undo_app = load_module_from_dir(undo_dir, "undo_app")
+    undo_app.app.config["TESTING"] = True
+    client = undo_app.app.test_client()
+
+    # Verify Freemium homepage & pricing page render
+    r_home = client.get("/")
+    assert r_home.status_code == 200 and b"FREE FOREVER" in r_home.data
+    r_price = client.get("/pricing")
+    assert r_price.status_code == 200 and b"TIER 0" in r_price.data and b"TIER 1" in r_price.data
+    print("  -> Freemium tiers (Tier 0 Free Forever / Tier 1 Co-op Pro / Tier 2 Patron) live")
+
+    # Inspect Dataset 1 (Portage Ave Tailor — has a clobbered formula and deleted row!)
+    r_ds = client.get("/ds/1")
+    assert r_ds.status_code == 200 and b"1 FORMULA CLOBBERED" in r_ds.data and b"9999.00" in r_ds.data
+    print("  -> Detected clobbered formula (9999.00) and missing THREAD-GOLD row on Dataset #1")
+
+    # Click the Universal Undo Button to restore Commit #1!
+    r_undo = client.post("/ds/1/undo", data={"target_commit_id": "1", "bad_commit_id": "2"}, follow_redirects=True)
+    assert r_undo.status_code == 200
+    assert b"THREAD-GOLD" in r_undo.data and b"=Qty*UnitCost" in r_undo.data
+    print("  -> [PASSED] 1-Click Universal Undo restored deleted THREAD-GOLD row & recovered =Qty*UnitCost formula!")
+
+
 if __name__ == "__main__":
     test_scheduling_nuke_and_undo()
     test_grants_revision_and_undo()
     test_st_ignatius_library_and_undo()
-    print("\n🧦⚙️🧦 ALL V3 'ONE BIG BACK END' TESTS PASSED! NOTHING CAN PLUG IT! 🧦⚙️🧦")
+    test_freemium_universal_undo_saas()
+    print("\n🧦⚙️🧦 ALL V3 'ONE BIG BACK END' + FREEMIUM UNDO SAAS TESTS PASSED! 🧦⚙️🧦")
