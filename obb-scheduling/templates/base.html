@@ -18,6 +18,7 @@
     <a href="{{ url_for('swaps', shop_id=g.shop.id) }}">Swaps</a>
     <a href="{{ url_for('timeoff', shop_id=g.shop.id) }}">Time off</a>
     <a href="{{ url_for('availability', shop_id=g.shop.id) }}">Availability</a>
+    <a href="{{ url_for('bayesian_forecast', shop_id=g.shop.id) }}">Bayesian Forecast</a>
     <a href="{{ url_for('schedule_history', shop_id=g.shop.id) }}">History / Undo</a>
     <a href="{{ url_for('notifications', shop_id=g.shop.id) }}">Notifications{% if g.unread %} <span class="nbadge">{{ g.unread }}</span>{% endif %}</a>
     {% if g.user.role == 'manager' %}

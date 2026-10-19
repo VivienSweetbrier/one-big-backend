@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Bayesian M/G/c Forecast · {{ shop.name }}{% endblock %}
+{% block content %}
+<h1>Bayesian M/G/c Demand Forecasting &amp; Bill 56 Verifier</h1>
+<p class="lede">
+  {{ shop.name }} · Powered by <code>VivienSweetbrier/bayesian-queue</code>.
+  Models heavy-tailed, non-memoryless service times (Weibull <em>k &lt; 1</em>) and Poisson arrivals to flag both
+  <strong>Manitoba Bill 56 statutory staffing violations</strong> and <strong>thermodynamic queue saturation (ρ ≥ 1.0)</strong>.
+</p>
+
+<table class="tbl">
+  <tr>
+    <th>Rush Window</th>
+    <th>Arrivals (λ/hr)</th>
+    <th>Service Time (Weibull)</th>
+    <th>Scheduled (c) vs Bill 56</th>
+    <th>Posterior Traffic Intensity (ρ)</th>
+    <th>P(Saturation)</th>
+    <th>Status &amp; Optimal c*</th>
+    <th>1-Click Action</th>
+  </tr>
+  {% for r in reports %}
+  <tr>
+    <td>
+      <strong>{{ r.window_label }}</strong><br>
+      <small>{{ days[r.day] }} {{ r.start_minutes|tstr }}–{{ r.end_minutes|tstr }}</small>
+    </td>
+    <td>{{ "%.1f"|format(r.arrival_rate_per_hr) }} / hr</td>
+    <td>
+      {{ "%.1f"|format(r.mean_service_mins) }} min avg<br>
+      <small>Weibull k={{ "%.2f"|format(r.weibull_k) }}</small>
+    </td>
+    <td>
+      <strong>{{ r.scheduled_staff_c }}</strong> on floor<br>
+      <small>Bill 56 min: {{ r.bill56_min_staff }}</small>
+    </td>
+    <td>
+      <strong>ρ = {{ "%.2f"|format(r.mean_rho) }}</strong><br>
+      <small>95% HDI [{{ "%.2f"|format(r.hdi_95_low) }}, {{ "%.2f"|format(r.hdi_95_high) }}]</small>
+    </td>
+    <td>
+      {% if r.p_saturation > 0.05 %}
+        <strong style="color:#9b2226">{{ "%.1f"|format(r.p_saturation * 100) }}%</strong>
+      {% else %}
+        <strong style="color:#1b4332">{{ "%.1f"|format(r.p_saturation * 100) }}%</strong>
+      {% endif %}
+    </td>
+    <td>
+      {% if r.status_badge == 'STABLE' %}
+        <span class="tag ok">STABLE (c* = {{ r.recommended_optimal_c }})</span>
+      {% else %}
+        <span class="tag bad">{{ r.status_badge }}</span><br>
+        <small>Needs <strong>c* = {{ r.recommended_optimal_c }}</strong> staff</small>
+      {% endif %}
+    </td>
+    <td>
+      {% if r.scheduled_staff_c < r.recommended_optimal_c and g.user.role == 'manager' %}
+        <form method="post" action="{{ url_for('bayesian_autofix', shop_id=shop.id) }}">
+          <input type="hidden" name="week" value="{{ cur_week }}">
+          <input type="hidden" name="day" value="{{ r.day }}">
+          <input type="hidden" name="start_minutes" value="{{ r.start_minutes }}">
+          <input type="hidden" name="end_minutes" value="{{ r.end_minutes }}">
+          <input type="hidden" name="target_c" value="{{ r.recommended_optimal_c }}">
+          <button class="mini go" type="submit">⚡ Auto-staff to c*={{ r.recommended_optimal_c }}</button>
+        </form>
+      {% elif r.scheduled_staff_c >= r.recommended_optimal_c %}
+        <span class="tag ok">✓ Optimal</span>
+      {% else %}
+        <small>Manager only</small>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

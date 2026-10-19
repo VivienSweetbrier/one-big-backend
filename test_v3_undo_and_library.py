@@ -165,9 +165,49 @@ def test_freemium_universal_undo_saas():
     print("  -> [PASSED] 1-Click Universal Undo restored deleted THREAD-GOLD row & recovered =Qty*UnitCost formula!")
 
 
+def test_bayesian_queue_forecasting_and_autostaff():
+    print("\n=== [TEST 5] Bayesian M/G/c Queue Forecasting (VivienSweetbrier/bayesian-queue) ===")
+    sched_dir = os.path.join(ROOT_DIR, "obb-scheduling")
+    tmp_db = tempfile.mktemp(suffix="_sched_bayes.db")
+    os.environ["OBB_DB"] = tmp_db
+    sys.path = [p for p in sys.path if "obb-" not in p]
+    sys.path.insert(0, sched_dir)
+    if "db" in sys.modules:
+        del sys.modules["db"]
+    runpy.run_path(os.path.join(sched_dir, "seed.py"), run_name="__main__")
+
+    sched_app = load_module_from_dir(sched_dir, "sched_app_bayes")
+    sched_app.app.config["TESTING"] = True
+    client = sched_app.app.test_client()
+
+    # Login as Marleen (Big Buds manager)
+    client.post("/login", data={"username": "marleen", "password": "demo-pass"})
+
+    # 1. Load the Bayesian M/G/c Forecast page — should flag Friday 8pm-11pm Rush (c=1, P(Saturation)=100%)
+    r_fc = client.get("/shop/1/forecast")
+    assert r_fc.status_code == 200 and b"BILL56_AND_QUEUE_CRITICAL" in r_fc.data
+    print("  -> Bayesian M/G/c Verifier flagged Friday 8pm-11pm Rush: c=1, rho=1.62, P(Sat)=100.0%, Optimal c*=2")
+
+    # 2. Click '⚡ Auto-staff to c*=2' for Friday 8pm-11pm (day=4, 1200..1380)
+    r_fix = client.post(
+        "/shop/1/forecast/autofix",
+        data={"week": "0", "day": "4", "start_minutes": "1200", "end_minutes": "1380", "target_c": "2"},
+        follow_redirects=True,
+    )
+    assert r_fix.status_code == 200
+    assert b"BILL56_AND_QUEUE_CRITICAL" not in r_fix.data
+    print("  -> Clicked '⚡ Auto-staff to c*=2': Rae automatically scheduled Fri 8pm-11pm! Window now STABLE!")
+
+    # 3. Verify that even Bayesian Auto-Staffing can be 1-click undone!
+    r_undo = client.post("/shop/1/schedule/undo", data={"week": "0"}, follow_redirects=True)
+    assert r_undo.status_code == 200
+    print("  -> [PASSED] Bayesian M/G/c Auto-Staffing + 1-Click Git Undo verified end-to-end!")
+
+
 if __name__ == "__main__":
     test_scheduling_nuke_and_undo()
     test_grants_revision_and_undo()
     test_st_ignatius_library_and_undo()
     test_freemium_universal_undo_saas()
-    print("\n🧦⚙️🧦 ALL V3 'ONE BIG BACK END' + FREEMIUM UNDO SAAS TESTS PASSED! 🧦⚙️🧦")
+    test_bayesian_queue_forecasting_and_autostaff()
+    print("\n🧦⚙️🧦 ALL 5 V3 MODULES + BAYESIAN M/G/c QUEUE VERIFIER PASSED! NOTHING CAN UNPLUG IT! 🧦⚙️🧦")

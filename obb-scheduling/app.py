@@ -1270,6 +1270,131 @@ def settings(shop_id):
     return render_template("settings.html", shop=shop)
 
 
+# ---------- v3: Bayesian M/G/c Demand Forecasting (VivienSweetbrier/bayesian-queue) ----------
+import sys as _sys
+_ROOT_OBB = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _ROOT_OBB not in _sys.path:
+    _sys.path.insert(0, _ROOT_OBB)
+from bayesian_queue import evaluate_window_mgc
+
+
+def _shop_forecast_windows(shop, week=0):
+    """Evaluate key store windows using the Bayesian M/G/c Weibull Queue Verifier."""
+    shop_id = shop["id"]
+    open_m = shop["open_minutes"]
+    close_m = shop["close_minutes"]
+    high_risk_start = max(open_m, min(close_m - 60, 20 * 60))
+
+    # Window definitions: (label, day, start_m, end_m, arrivals, weibull_k, weibull_scale_mins)
+    windows_spec = [
+        ("Wednesday Deal-Day Afternoon (12:00 PM–5:00 PM)", 2, max(open_m, 12 * 60), min(close_m, 17 * 60),
+         [15, 18, 16, 17, 19], 0.85, 5.2),
+        ("Friday Evening Rush (8:00 PM–Close)", 4, high_risk_start, close_m,
+         [14, 16, 15, 18, 13, 17], 0.80, 5.5),
+        ("Saturday Peak Afternoon (1:00 PM–6:00 PM)", 5, max(open_m, 13 * 60), min(close_m, 18 * 60),
+         [16, 19, 18, 20, 17], 0.82, 5.0),
+        ("Sunday Evening Close (8:00 PM–Close)", 6, high_risk_start, close_m,
+         [9, 11, 10, 12, 8], 0.90, 4.8),
+    ]
+
+    reports = []
+    for label, day, s_m, e_m, arrs, wk, wscale in windows_spec:
+        if e_m <= s_m:
+            continue
+        cov = coverage(shop_id, shop, day, week)
+        buckets_in_win = [cov[b] for b in cov if s_m <= b < e_m]
+        sched_c = min(buckets_in_win) if buckets_in_win else 0
+
+        # Check active Bill 56 rule requirement for this window
+        req_min = 1
+        for r in active_rules(shop_id):
+            rdays = [int(x) for x in r["days"].split(",") if x != ""]
+            if day in rdays and r["start_minutes"] < e_m and r["end_minutes"] > s_m:
+                req_min = max(req_min, r["min_staff"])
+
+        rep = evaluate_window_mgc(
+            window_label=label,
+            day=day,
+            start_minutes=s_m,
+            end_minutes=e_m,
+            scheduled_staff_c=sched_c,
+            bill56_min_staff=req_min,
+            observed_hourly_arrivals=arrs,
+            weibull_k=wk,
+            weibull_scale_mins=wscale,
+        )
+        reports.append(rep)
+    return reports
+
+
+@app.route("/shop/<int:shop_id>/forecast")
+def bayesian_forecast(shop_id):
+    r = guard(shop_id)
+    if r:
+        return r
+    shop = g.shop
+    week = current_week()
+    reports = _shop_forecast_windows(shop, week)
+    return render_template(
+        "forecast.html", shop=shop, reports=reports, cur_week=week, days=DAYS
+    )
+
+
+@app.route("/shop/<int:shop_id>/forecast/autofix", methods=["POST"])
+def bayesian_autofix(shop_id):
+    """1-click auto-schedule available staff to bring a saturated/violating window up to c*."""
+    r = guard(shop_id)
+    if r:
+        return r
+    manager_only()
+    shop = g.shop
+    week = max(0, min(MAX_WEEK, int(request.form.get("week", "0") or 0)))
+    day = int(request.form["day"])
+    start_m = int(request.form["start_minutes"])
+    end_m = int(request.form["end_minutes"])
+    target_c = int(request.form["target_c"])
+
+    cov = coverage(shop_id, shop, day, week)
+    buckets_in_win = [cov[b] for b in cov if start_m <= b < end_m]
+    cur_c = min(buckets_in_win) if buckets_in_win else 0
+    needed = max(0, target_c - cur_c)
+    if needed == 0:
+        flash("Window already meets optimal Bayesian staffing c*.")
+        return redirect(url_for("bayesian_forecast", shop_id=shop_id, week=week))
+
+    before_snap = _snapshot_week_shifts(shop_id, week)
+    added_names = []
+    for emp in employees(shop_id):
+        if len(added_names) >= needed:
+            break
+        err = _validate_shift(shop, emp["id"], day, start_m, end_m, week)
+        if err is None:
+            d.run(
+                "INSERT INTO shifts (shop_id, employee_id, day, week, start_minutes, end_minutes)"
+                " VALUES (?,?,?,?,?,?)",
+                (shop_id, emp["id"], day, week, start_m, end_m),
+            )
+            added_names.append(emp["name"])
+
+    if added_names:
+        after_snap = _snapshot_week_shifts(shop_id, week)
+        chash = _record_schedule_commit(
+            shop_id,
+            week,
+            "bayesian_autofix",
+            f"Bayesian M/G/c Auto-Staff: Added {', '.join(added_names)} on {DAYS[day]} {mins_to_str(start_m)}–{mins_to_str(end_m)}",
+            before_snap,
+            after_snap,
+        )
+        flash(
+            f"Bayesian Auto-Staffing scheduled {', '.join(added_names)} for {DAYS[day]} "
+            f"{mins_to_str(start_m)}–{mins_to_str(end_m)} (commit {chash[:7]} — 1-click Undo available)."
+        )
+    else:
+        flash("No conflict-free employee available for that exact window; adjust existing shift end-times on the Schedule tab.")
+    return redirect(url_for("bayesian_forecast", shop_id=shop_id, week=week))
+
+
 if __name__ == "__main__":
     # The Flask dev server is intentionally gone: it must never serve a
     # pilot (debug reloader + single-threaded dev socket). The production
