@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ app_row.title }}</h1>
+<p class="lede">{% if app_row.opp_title %}For: {{ app_row.opp_title }}{% if app_row.funder %} ({{ app_row.funder }}){% endif %}{% endif %}
+· <span class="tag st-{{ app_row.status }}">{{ app_row.status }}</span></p>
+{% if band in ('urgent','past') %}
+<div class="alert">Funder deadline {% if band == 'past' %}has <strong>passed</strong>{% else %}in <strong>{{ days }} days</strong>{% endif %}.</div>
+{% endif %}
+
+<div class="statgrid">
+  <div class="stat"><span class="num">{{ done }}/{{ total }}</span><span class="lbl">sections filled</span></div>
+  <div class="stat"><span class="num">{{ total_words }}</span><span class="lbl">words{% if total_target %} / {{ total_target }} target{% endif %}</span></div>
+</div>
+
+{% for s in sections %}
+<div class="rule">
+  <div style="flex:1;min-width:220px">
+    <strong>{{ s.heading }}</strong>
+    <span> · {{ s.words }}{% if s.word_target %} / {{ s.word_target }}{% endif %} words{% if s.contributor %} · by {{ s.contributor }}{% endif %}</span>
+    {% if s.prompt %}<p class="hint">{{ s.prompt }}</p>{% endif %}
+    <form method="post">
+      <input type="hidden" name="section_id" value="{{ s.id }}">
+      <label>Contributor <input name="contributor" value="{{ s.contributor }}" placeholder="who wrote this"></label>
+      <label>Insert boilerplate
+        <select name="insert_block">
+          <option value="">— none —</option>
+          {% for b in blocks %}<option value="{{ b.id }}">{{ b.block_name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Draft <textarea name="body" rows="5" style="padding:.6rem;border:1px solid var(--line);border-radius:8px;font-size:1rem">{{ s.body }}</textarea></label>
+      <div class="rowbtns" style="margin-top:.5rem">
+        <button class="btn" type="submit">Save section</button>
+      </div>
+    </form>
+  </div>
+  <div class="rowbtns">
+    <form method="post" action="{{ url_for('section_assist', tenant_id=g.tenant.id, app_id=app_row.id, sec_id=s.id) }}">
+      <button class="mini" type="submit" title="Insert a honestly-labeled template starter assembled from your boilerplate">Draft assist</button>
+    </form>
+    <form method="post" action="{{ url_for('section_delete', tenant_id=g.tenant.id, app_id=app_row.id, sec_id=s.id) }}">
+      <button class="mini danger" type="submit" onclick="return confirm('Delete this section?')">Delete</button>
+    </form>
+  </div>
+</div>
+{% endfor %}
+
+<h2>Budget import</h2>
+<p class="hint">Upload a CSV with <strong>category</strong>, <strong>description</strong> and <strong>amount</strong> columns — line items land in the Budget section (created if missing). Bad rows are reported and skipped.</p>
+<form method="post" enctype="multipart/form-data" action="{{ url_for('budget_import', tenant_id=g.tenant.id, app_id=app_row.id) }}">
+  <label>CSV file <input type="file" name="csv" accept=".csv"></label>
+  <button class="btn" type="submit">Import budget CSV</button>
+</form>
+
+<h2>Add section</h2>
+<form class="form" method="post">
+  <label>Heading <input name="heading" required></label>
+  <label>Prompt <input name="prompt"></label>
+  <label>Word target <input type="number" min="0" name="word_target"></label>
+  <button class="mini go" type="submit" name="add_section" value="1">Add section</button>
+</form>
+
+<h2>Submit</h2>
+<p class="hint">Logging a submission marks the application and its opportunity as submitted.</p>
+<form method="post" action="{{ url_for('app_submit', tenant_id=g.tenant.id, app_id=app_row.id) }}">
+  <button class="btn" type="submit" onclick="return confirm('Log this application as submitted?')">Log submission</button>
+</form>
+
+{% if commits %}
+<h2>Git Revision History &amp; 1-Click Undo</h2>
+<p class="hint">Every section edit, boilerplate insert, or budget CSV import is saved as a signed commit so contributors never overwrite each other permanently.</p>
+<table class="tbl">
+  <tr>
+    <th>Commit</th>
+    <th>When</th>
+    <th>Contributor</th>
+    <th>Section</th>
+    <th>Summary</th>
+    <th>Undo</th>
+  </tr>
+  {% for c in commits %}
+  <tr>
+    <td><code>{{ c.commit_hash[:7] }}</code></td>
+    <td>{{ c.created }}</td>
+    <td><strong>{{ c.author }}</strong></td>
+    <td>{{ c.section_heading }}</td>
+    <td>{{ c.summary }}</td>
+    <td>
+      {% if c.action_kind == 'revert' %}
+        <span class="tag ok">Revert</span>
+      {% elif c.reverted %}
+        <span class="tag">Undone</span>
+      {% else %}
+        <form method="post" action="{{ url_for('app_undo_commit', tenant_id=g.tenant.id, app_id=app_row.id) }}" style="display:inline">
+          <input type="hidden" name="commit_id" value="{{ c.id }}">
+          <button class="mini go" type="submit">↶ Undo</button>
+        </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<form method="post" style="margin-top:1rem">
+  <button class="mini danger" type="submit" name="delete" value="1" onclick="return confirm('Delete this application and its sections?')">Delete application</button>
+</form>
+{% endblock %}

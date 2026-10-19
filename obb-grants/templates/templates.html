@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Application templates</h1>
+<p class="lede">Save a section set once per funder, then start new applications from it — no more rebuilding the same structure every grant cycle.</p>
+
+<h2>New template</h2>
+<form class="form" method="post">
+  <label>Template name <input name="name" required placeholder="e.g. Manitoba Trades Fund template"></label>
+  <label>Funder (optional) <input name="funder" placeholder="which funder this is for"></label>
+  <button class="btn" type="submit">Save template</button>
+</form>
+
+<h2>Saved templates</h2>
+{% if templates %}
+{% for t in templates %}
+<div class="rule">
+  <div style="flex:1">
+    <strong><a href="{{ url_for('tpl_detail', tenant_id=g.tenant.id, tpl_id=t.id) }}">{{ t.name }}</a></strong>
+    {% if t.funder %}<span class="hint"> · {{ t.funder }}</span>{% endif %}
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<p class="empty">No custom templates yet. The standard 5-section template is always available.</p>
+{% endif %}
+{% endblock %}

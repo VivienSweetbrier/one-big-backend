@@ -1,0 +1,32 @@
+# fly.toml — One Big Backend, Module 1 (scheduling)
+#
+# Deploy (do NOT commit secrets here):
+#   fly launch            # accept the generated app name or rename to obb-scheduling
+#   fly volumes create obb_scheduling_data --region yyz --size 1
+#   fly secrets set OBB_SECRET="$(openssl rand -hex 32)"
+#   fly deploy
+#
+# OBB_SECRET is mandatory in production: without it every deployment
+# shares the dev fallback key and sessions can be forged.
+
+app = "obb-scheduling"
+primary_region = "yyz"
+
+[env]
+  PORT = "5057"
+  OBB_DB = "/data/obb.db"
+  OBB_COOKIE_SECURE = "1"
+
+[http_service]
+  internal_port = 5057
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+
+[[mounts]]
+  source = "obb_scheduling_data"
+  destination = "/data"

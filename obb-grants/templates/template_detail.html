@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ tpl.name }}</h1>
+<p class="lede">{% if tpl.funder %}For: {{ tpl.funder }} · {% endif %}created {{ tpl.created }}</p>
+
+<h2>Sections ({{ sections|length }})</h2>
+{% for s in sections %}
+<div class="rule">
+  <div style="flex:1">
+    <strong>{{ s.heading }}</strong>
+    <span> · {% if s.word_target %}{{ s.word_target }} words target{% else %}no word target{% endif %}</span>
+    {% if s.prompt %}<p class="hint">{{ s.prompt }}</p>{% endif %}
+  </div>
+  <form method="post" action="{{ url_for('tpl_section_delete', tenant_id=g.tenant.id, tpl_id=tpl.id, sec_id=s.id) }}">
+    <button class="mini danger" type="submit" onclick="return confirm('Remove this section from the template?')">Remove</button>
+  </form>
+</div>
+{% endfor %}
+
+<h2>Add section</h2>
+<form class="form" method="post">
+  <label>Heading <input name="heading" required></label>
+  <label>Prompt <input name="prompt"></label>
+  <label>Word target <input type="number" min="0" name="word_target"></label>
+  <button class="mini go" type="submit" name="add_section" value="1">Add section</button>
+</form>
+
+<h2>Delete template</h2>
+<form method="post">
+  <button class="mini danger" type="submit" name="delete" value="1" onclick="return confirm('Delete this template?')">Delete template</button>
+</form>
+{% endblock %}

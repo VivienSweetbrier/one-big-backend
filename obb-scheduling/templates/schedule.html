@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Schedule · {{ shop.name }}{% endblock %}
+{% block content %}
+<h1>Weekly schedule</h1>
+<p class="lede">{{ shop.name }} · {{ shop.open_minutes|tstr }} – {{ shop.close_minutes|tstr }}</p>
+
+<div class="weeknav">
+  {% if cur_week > 0 %}
+  <a class="mini" href="{{ url_for('schedule', shop_id=shop.id, week=cur_week-1) }}">◀ prev</a>
+  {% endif %}
+  <strong>Week {{ cur_week + 1 }}{% if cur_week == 0 %} (this week){% endif %}</strong>
+  {% if cur_week < max_week %}
+  <a class="mini" href="{{ url_for('schedule', shop_id=shop.id, week=cur_week+1) }}">next ▶</a>
+  {% endif %}
+  {% if g.user.role == 'manager' and cur_week < max_week %}
+  <form method="post" action="{{ url_for('copy_week', shop_id=shop.id) }}" style="display:inline">
+    <input type="hidden" name="week" value="{{ cur_week }}">
+    <button class="btn" type="submit" style="padding:.4rem .8rem">Copy this week → week {{ cur_week + 2 }}</button>
+  </form>
+  {% endif %}
+  {% if g.user.role == 'manager' %}
+  <form method="post" action="{{ url_for('clear_week', shop_id=shop.id) }}" style="display:inline" onsubmit="return confirm('Clear all shifts in this week? (You can restore them with 1-click Undo)')">
+    <input type="hidden" name="week" value="{{ cur_week }}">
+    <button class="mini danger" type="submit" style="padding:.4rem .8rem">Clear week</button>
+  </form>
+  {% if last_commit %}
+  <form method="post" action="{{ url_for('undo_schedule', shop_id=shop.id) }}" style="display:inline">
+    <input type="hidden" name="week" value="{{ cur_week }}">
+    <input type="hidden" name="commit_id" value="{{ last_commit.id }}">
+    <button class="mini go" type="submit" style="padding:.4rem .8rem" title="Undo: {{ last_commit.summary }}">↶ Undo last change ({{ last_commit.commit_hash[:7] }})</button>
+  </form>
+  {% endif %}
+  {% endif %}
+</div>
+
+{% if violations %}
+<div class="alert">
+  <strong>⚠ Staffing-rule violations</strong>
+  <ul>
+  {% for v in violations %}
+    <li>{{ v.day_name }} {{ v.start|tstr }}–{{ v.end|tstr }}: “{{ v.rule_name }}” needs {{ v.required }}, only {{ v.actual }} on floor.</li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if off_conflicts %}
+<div class="alert">
+  <strong>⚠ Time-off conflicts</strong>
+  <ul>
+  {% for c in off_conflicts %}
+    <li>{{ c.off.emp_name }} is scheduled {{ days[c.shift.day] }} {{ c.shift.start_minutes|tstr }}–{{ c.shift.end_minutes|tstr }}
+      but has approved time-off {{ c.off.start_minutes|tstr }}–{{ c.off.end_minutes|tstr }}. Reassign the shift.</li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="weekscroll">
+<table class="week">
+<tr>{% for d in week %}<th>{{ d.name }}</th>{% endfor %}</tr>
+<tr>
+{% for d in week %}
+<td>
+  {% for s in d.shifts %}
+  <div class="chip">
+    <strong>{{ s.emp_name }}</strong><br>
+    <span>{{ s.start_minutes|tstr }}–{{ s.end_minutes|tstr }}</span>
+    {% if g.user.role == 'manager' %}
+    <form method="post" action="{{ url_for('delete_shift', shop_id=shop.id, sid=s.id) }}" onsubmit="return confirm('Delete this shift?')">
+      <input type="hidden" name="week" value="{{ cur_week }}">
+      <button class="mini danger" type="submit">✕</button>
+    </form>
+    {% endif %}
+  </div>
+  {% else %}<span class="empty">—</span>{% endfor %}
+</td>
+{% endfor %}
+</tr>
+</table>
+</div>
+
+{% if g.user.role == 'manager' %}
+<h2>Add a shift</h2>
+<form method="post" action="{{ url_for('add_shift', shop_id=shop.id) }}" class="form">
+  <input type="hidden" name="week" value="{{ cur_week }}">
+  <label>Employee
+    <select name="employee_id" required>
+      {% for e in emps %}<option value="{{ e.id }}">{{ e.name }} ({{ e.role }})</option>{% endfor %}
+    </select>
+  </label>
+  <label>Day
+    <select name="day" required>
+      {% for i in range(7) %}<option value="{{ i }}">{{ days[i] }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Start <input type="time" name="start" required></label>
+  <label>End <input type="time" name="end" required></label>
+  <button class="btn" type="submit">Add shift</button>
+</form>
+<p class="hint">Shifts must fall within store hours. Overlaps for the same employee — and approved time-off — block new shifts.</p>
+{% else %}
+<p class="hint">Managers add shifts here. You can request swaps and time off from the nav.</p>
+{% endif %}
+{% endblock %}

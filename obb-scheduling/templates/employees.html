@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Staff · {{ shop.name }}{% endblock %}
+{% block content %}
+<h1>Staff</h1>
+<table class="tbl">
+<tr><th>Name</th><th>Role</th><th>Wage</th><th>Hours this wk</th><th></th></tr>
+{% for e in emps %}
+{% set h = hours_by_id.get(e.id) %}
+<tr>
+  <td>{{ e.name }}</td><td>{{ e.role }}</td><td>${{ "%.2f"|format(e.hourly_wage) }}/h</td>
+  <td>{{ "%.1f"|format(h.hours) if h }} / {{ e.max_hours_week }} max</td>
+  <td>{% if g.user.role == 'manager' %}<form method="post" action="{{ url_for('delete_employee', shop_id=shop.id, eid=e.id) }}" onsubmit="return confirm('Remove {{ e.name }}?')">
+    <button class="mini danger" type="submit">Remove</button></form>{% endif %}</td>
+</tr>
+{% endfor %}
+</table>
+
+{% if g.user.role == 'manager' %}
+<h2>Add employee</h2>
+<form method="post" class="form">
+  <label>Name <input name="name" required></label>
+  <label>Role <input name="role" placeholder="Budtender"></label>
+  <label>Hourly wage ($) <input name="wage" type="number" step="0.01" min="0" required></label>
+  <label>Max hours/week <input name="max_hours" type="number" step="0.5" min="0" value="40"></label>
+  <button class="btn" type="submit">Add employee</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}403 · One Big Backend{% endblock %}
+{% block content %}
+<h1>403 — not yours to touch</h1>
+<p class="lede">You're logged in, but this belongs to a different shop — or needs a manager.
+Nothing can plug One Big Backend, and nobody can peek across the counter.</p>
+<p><a class="btn" href="{{ url_for('index') }}">Back to safety</a></p>
+{% endblock %}

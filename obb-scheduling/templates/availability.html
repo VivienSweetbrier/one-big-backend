@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Availability · {{ shop.name }}{% endblock %}
+{% block content %}
+<h1>Availability</h1>
+<p class="lede">Weekly recurring windows — when each person <em>can</em> work. Managers schedule inside them.</p>
+
+<table class="tbl">
+<tr><th>Who</th><th>Day</th><th>Window</th><th></th></tr>
+{% for a in rows %}
+<tr>
+  <td>{{ a.emp_name }}</td><td>{{ days[a.day] }}</td>
+  <td>{{ a.start_minutes|tstr }}–{{ a.end_minutes|tstr }}</td>
+  <td><form method="post" action="{{ url_for('delete_availability', shop_id=shop.id, aid=a.id) }}">
+    <button class="mini danger" type="submit">Remove</button></form></td>
+</tr>
+{% else %}<tr><td colspan="4">No availability set yet.</td></tr>{% endfor %}
+</table>
+
+<h2>Add availability</h2>
+<form method="post" class="form">
+  {% if g.user.role == 'manager' %}
+  <label>Employee
+    <select name="employee_id" required>
+      {% for e in emps %}<option value="{{ e.id }}" {% if me and e.id == me.id %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+    </select>
+  </label>
+  {% else %}
+  <input type="hidden" name="employee_id" value="{{ me.id if me }}">
+  <p class="hint">Setting availability for <strong>{{ me.name if me }}</strong>.</p>
+  {% endif %}
+  <label>Day
+    <select name="day" required>
+      {% for i in range(7) %}<option value="{{ i }}">{{ days[i] }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Available from <input type="time" name="start" required></label>
+  <label>Available until <input type="time" name="end" required></label>
+  <button class="btn" type="submit">Save availability</button>
+</form>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Settings · {{ shop.name }}{% endblock %}
+{% block content %}
+<h1>Shop settings</h1>
+<form method="post" class="form">
+  <label>Shop name <input name="name" value="{{ shop.name }}" required></label>
+  <label>Opens <input type="time" name="open" value="{{ shop.open_minutes|tinput }}" required></label>
+  <label>Closes <input type="time" name="close" value="{{ shop.close_minutes|tinput }}" required></label>
+  <label>Weekly labor budget ($) <input name="budget" type="number" step="0.01" min="0" value="{{ shop.weekly_budget }}">
+  </label>
+  <button class="btn" type="submit">Save</button>
+</form>
+<p class="hint">Set the budget to 0 to disable budget warnings. Store hours bound the scheduler and the rule engine.</p>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ shop.name }} · One Big Backend{% endblock %}
+{% block content %}
+<h1>{{ shop.name }}</h1>
+<p class="lede">Week at a glance · {{ shop.open_minutes|tstr }} – {{ shop.close_minutes|tstr }}</p>
+
+{% if violations %}
+<div class="alert">
+  <strong>⚠ {{ violations|length }} staffing-rule violation{{ 's' if violations|length > 1 }}.</strong>
+  <ul>
+  {% for v in violations %}
+    <li>{{ v.day_name }} {{ v.start|tstr }}–{{ v.end|tstr }}: “{{ v.rule_name }}” needs {{ v.required }}, only {{ v.actual }} on floor.</li>
+  {% endfor %}
+  </ul>
+  <p><a href="{{ url_for('schedule', shop_id=shop.id) }}">Fix in the schedule →</a></p>
+</div>
+{% else %}
+<div class="okbox"><strong>✓ No staffing-rule violations this week.</strong></div>
+{% endif %}
+
+<div class="statgrid">
+  <div class="stat"><span class="num">{{ "%.1f"|format(total_h) }}</span><span class="lbl">hours scheduled</span></div>
+  <div class="stat"><span class="num">${{ "%.2f"|format(total_c) }}</span><span class="lbl">labor cost</span></div>
+  <div class="stat"><span class="num">{{ pending_swaps }}</span><span class="lbl">pending swaps</span></div>
+</div>
+
+{% if budget.cap > 0 %}
+<div class="budget">
+  <div class="brow"><span>Weekly budget: ${{ "%.2f"|format(budget.cap) }}</span>
+  <span class="{{ budget.state }}">{{ "%.0f"|format(budget.pct) }}% used</span></div>
+  <div class="bar"><div class="fill {{ budget.state }}" style="width:{{ [budget.pct, 100]|min }}%"></div></div>
+  {% if budget.state == "over" %}<p class="bad">Over budget — trim hours or raise the cap in Settings.</p>
+  {% elif budget.state == "warn" %}<p class="warnline">Approaching the budget cap.</p>{% endif %}
+</div>
+{% endif %}
+
+<h2>Today ({{ today_name }})</h2>
+{% if todays %}
+<ul class="shiftlist">
+{% for s in todays %}
+  <li><strong>{{ s.emp_name }}</strong> · {{ s.start_minutes|tstr }}–{{ s.end_minutes|tstr }}</li>
+{% endfor %}
+</ul>
+{% else %}<p>No shifts today.</p>{% endif %}
+
+<h2>Labor by staff</h2>
+<table class="tbl">
+<tr><th>Name</th><th>Role</th><th>Hours</th><th>Cost</th></tr>
+{% for e in per_emp %}
+<tr class="{{ 'badrow' if e.over_max }}">
+  <td>{{ e.name }}</td><td>{{ e.role }}</td>
+  <td>{{ "%.1f"|format(e.hours) }}{% if e.over_max %} ⚠ over {{ e.max_hours }}h max{% endif %}</td>
+  <td>${{ "%.2f"|format(e.cost) }}</td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

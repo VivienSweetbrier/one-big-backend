@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>New application</h1>
+<form class="form" method="post">
+  <label>Title <input name="title" required></label>
+  <label>Opportunity (optional)
+    <select name="opportunity_id">
+      <option value="">— none —</option>
+      {% for o in opps %}<option value="{{ o.id }}">{{ o.title }} ({{ o.funder }})</option>{% endfor %}
+    </select>
+  </label>
+  <label>Section template
+    <select name="template_id">
+      <option value="">Standard 5-section template</option>
+      {% for t in templates %}<option value="{{ t.id }}">{{ t.name }}{% if t.funder %} ({{ t.funder }}){% endif %}</option>{% endfor %}
+    </select>
+  </label>
+  <p class="hint">Starts with the standard 5-section template: project summary,
+  organizational background, community impact, budget, contact — or pick one of
+  your saved per-funder templates.</p>
+  <button class="btn" type="submit">Start drafting</button>
+</form>
+{% endblock %}

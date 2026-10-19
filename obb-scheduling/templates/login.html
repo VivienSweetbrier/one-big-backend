@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Log in · One Big Backend{% endblock %}
+{% block content %}
+<h1>One Big Backend</h1>
+<p class="lede">Shared scheduling for independent shops. Log in with your shop account.</p>
+
+<form method="post" action="{{ url_for('login') }}" class="form">
+  {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+  <label>Username <input name="username" autocomplete="username" required></label>
+  <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
+  <button class="btn" type="submit">Log in</button>
+</form>
+
+<h2>Demo logins</h2>
+<p class="hint">Password for every demo account: <code>demo-pass</code></p>
+<table class="tbl">
+<tr><th>Shop</th><th>Username</th><th>Role</th></tr>
+<tr><td>Big Buds</td><td><code>marleen</code></td><td>manager</td></tr>
+<tr><td>Big Buds</td><td><code>josh</code></td><td>staff</td></tr>
+<tr><td>Big Buds</td><td><code>priya</code></td><td>staff</td></tr>
+<tr><td>Lucy's</td><td><code>lucy</code></td><td>manager</td></tr>
+<tr><td>Lucy's</td><td><code>devon</code></td><td>staff</td></tr>
+<tr><td>Lucy's</td><td><code>aisha</code></td><td>staff</td></tr>
+</table>
+
+<p><a class="btn" href="{{ url_for('coop') }}">View co-op dashboard</a></p>
+{% endblock %}

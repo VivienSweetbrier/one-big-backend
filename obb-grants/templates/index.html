@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Grant pipeline</h1>
+<p class="lede">Pick your organization. Each tenant sees only its own grants,
+boilerplate, and submissions — the co-op page shows totals only.</p>
+<div class="cards">
+  {% for t in tenants %}
+  <a class="card" href="{{ url_for('dashboard', tenant_id=t.id) }}">
+    <strong>{{ t.name }}</strong>
+    <span>{{ t.kind }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% if not tenants %}<p class="empty">No tenants yet.</p>{% endif %}
+{% endblock %}

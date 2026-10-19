@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}One Big Backend — Grants{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}">One Big Backend · Grants</a>
+  <nav>
+    {% if g.tenant %}
+    <a href="{{ url_for('dashboard', tenant_id=g.tenant.id) }}">Home</a>
+    <a href="{{ url_for('opp_list', tenant_id=g.tenant.id) }}">Opportunities</a>
+    <a href="{{ url_for('reminder_list', tenant_id=g.tenant.id) }}">Reminders{% if g.unread_reminders %} <span class="tag bad">{{ g.unread_reminders }}</span>{% endif %}</a>
+    <a href="{{ url_for('blocks', tenant_id=g.tenant.id) }}">Boilerplate</a>
+    <a href="{{ url_for('calendar', tenant_id=g.tenant.id) }}">Calendar</a>
+    <a href="{{ url_for('app_list', tenant_id=g.tenant.id) }}">Applications</a>
+    <a href="{{ url_for('tpl_list', tenant_id=g.tenant.id) }}">Templates</a>
+    <a href="{{ url_for('sub_list', tenant_id=g.tenant.id) }}">Submissions</a>
+    {% endif %}
+    <a href="{{ url_for('coop') }}">Co-op</a>
+  </nav>
+</header>
+<main class="wrap">
+  {% if g.tenant %}<p class="shoptag">Tenant: <strong>{{ g.tenant.name }}</strong>
+    <a href="{{ url_for('index') }}">switch</a></p>{% endif %}
+  {% with msgs = get_flashed_messages() %}
+    {% if msgs %}<div class="flash">{% for m in msgs %}<p>{{ m }}</p>{% endfor %}</div>{% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="foot">One Big Backend · grant-writing prototype · nothing can plug it</footer>
+</body>
+</html>

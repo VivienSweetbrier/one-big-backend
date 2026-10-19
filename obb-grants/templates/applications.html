@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Applications</h1>
+<table class="tbl">
+<tr><th>Title</th><th>Opportunity</th><th>Progress</th><th>Status</th></tr>
+{% for a in apps %}
+<tr>
+  <td><a href="{{ url_for('app_detail', tenant_id=g.tenant.id, app_id=a.id) }}">{{ a.title }}</a></td>
+  <td>{{ a.opp_title or '—' }}{% if a.funder %} ({{ a.funder }}){% endif %}</td>
+  <td>{{ a.ndone }}/{{ a.nsec }} sections</td>
+  <td><span class="tag st-{{ a.status }}">{{ a.status }}</span></td>
+</tr>
+{% endfor %}
+</table>
+{% if not apps %}<p class="empty">No applications yet — start one from an opportunity.</p>{% endif %}
+{% endblock %}

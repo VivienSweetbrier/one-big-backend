@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Co-op dashboard · One Big Backend{% endblock %}
+{% block content %}
+<h1>Co-op dashboard</h1>
+<p class="lede">Aggregate view across {{ nshops }} member shop{{ 's' if nshops != 1 }}. Individual staff names never leave their shop — this is the credit-union view.</p>
+
+<div class="statgrid">
+  <div class="stat"><span class="num">{{ "%.1f"|format(total_h) }}</span><span class="lbl">total hours scheduled</span></div>
+  <div class="stat"><span class="num">${{ "%.2f"|format(total_c) }}</span><span class="lbl">total labor cost</span></div>
+  <div class="stat"><span class="num">${{ "%.2f"|format(avg_c) }}</span><span class="lbl">avg cost per shop</span></div>
+</div>
+
+<h2>Per shop</h2>
+<table class="tbl">
+<tr><th>Shop</th><th>Staff</th><th>Shifts</th><th>Hours</th><th>Labor cost</th><th>Rule violations</th></tr>
+{% for r in rows %}
+<tr class="{{ 'badrow' if r.violations }}">
+  <td>{{ r.name }}</td><td>{{ r.staff }}</td><td>{{ r.shifts }}</td>
+  <td>{{ "%.1f"|format(r.hours) }}</td><td>${{ "%.2f"|format(r.cost) }}</td>
+  <td>{% if r.violations %}⚠ {{ r.violations }}{% else %}✓{% endif %}</td>
+</tr>
+{% endfor %}
+</table>
+<p class="hint">Violations here are counts only — the details stay inside each shop's own schedule.</p>
+{% endblock %}

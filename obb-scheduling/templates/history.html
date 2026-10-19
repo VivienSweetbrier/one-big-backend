@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}History & Undo · {{ shop.name }}{% endblock %}
+{% block content %}
+<h1>Git Audit Log &amp; 1-Click Undo</h1>
+<p class="lede">{{ shop.name }} · Every schedule edit, shift addition, deletion, or week-clear is recorded as a signed commit. Other software deletes mistakes permanently; One Big Backend lets you take them back.</p>
+
+{% if commits %}
+<table class="tbl">
+  <tr>
+    <th>Commit</th>
+    <th>When</th>
+    <th>Author</th>
+    <th>Week</th>
+    <th>Action</th>
+    <th>Shifts (Before → After)</th>
+    <th>Status / Undo</th>
+  </tr>
+  {% for c in commits %}
+  <tr>
+    <td><code>{{ c.commit_hash[:7] }}</code></td>
+    <td>{{ c.created }}</td>
+    <td><strong>{{ c.author }}</strong></td>
+    <td>Week {{ c.week + 1 }}</td>
+    <td>{{ c.summary }}</td>
+    <td>{{ c.before_count }} → {{ c.after_count }}</td>
+    <td>
+      {% if c.action_kind == 'revert' %}
+        <span class="tag ok">Revert commit</span>
+      {% elif c.reverted %}
+        <span class="tag">Undone</span>
+      {% elif g.user.role == 'manager' %}
+        <form method="post" action="{{ url_for('undo_schedule', shop_id=shop.id) }}" style="display:inline">
+          <input type="hidden" name="commit_id" value="{{ c.id }}">
+          <input type="hidden" name="week" value="{{ c.week }}">
+          <button class="mini go" type="submit">↶ Undo this</button>
+        </form>
+      {% else %}
+        <span class="tag ok">Active</span>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="empty">No schedule commits recorded yet. Make an edit on the Schedule tab to see the git log in action.</p>
+{% endif %}
+{% endblock %}

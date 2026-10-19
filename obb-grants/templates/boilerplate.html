@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Boilerplate library</h1>
+<p class="lede">Reusable org-profile blocks — mission, history, budget, contact.
+Insert them into any application section with one click.</p>
+{% for b in blocks %}
+<div class="rule">
+  <div style="flex:1">
+    <strong>{{ b.block_name }}</strong>
+    <span> · updated {{ b.updated or '—' }}</span>
+    <p style="white-space:pre-wrap">{{ b.body }}</p>
+  </div>
+  <form method="post" action="{{ url_for('block_delete', tenant_id=g.tenant.id, block_id=b.id) }}">
+    <button class="mini danger" type="submit" onclick="return confirm('Delete this block?')">Delete</button>
+  </form>
+</div>
+{% endfor %}
+{% if not blocks %}<p class="empty">No boilerplate blocks yet.</p>{% endif %}
+
+<h2>Add block</h2>
+<form class="form" method="post">
+  <label>Block name <input name="block_name" placeholder="Mission" required></label>
+  <label>Body <textarea name="body" rows="6" style="padding:.6rem;border:1px solid var(--line);border-radius:8px;font-size:1rem"></textarea></label>
+  <button class="btn" type="submit">Save block</button>
+</form>
+{% endblock %}

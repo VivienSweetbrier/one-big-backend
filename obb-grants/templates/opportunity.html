@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ opp.title }}</h1>
+<p class="lede">{{ opp.funder }}{% if opp.amount %} · ${{ "%.0f"|format(opp.amount) }}{% endif %}
+· <span class="tag st-{{ opp.status }}">{{ opp.status }}</span></p>
+{% if band in ('urgent','past') %}
+<div class="alert">{% if band == 'past' %}This deadline has <strong>passed</strong>.{% else %}Deadline in <strong>{{ days }} days</strong> ({{ opp.deadline }}).{% endif %}</div>
+{% elif band == 'soon' %}
+<div class="okbox">Deadline in {{ days }} days ({{ opp.deadline }}).</div>
+{% endif %}
+
+<h2>Applications for this opportunity</h2>
+<ul class="shiftlist">
+{% for a in apps %}
+<li><a href="{{ url_for('app_detail', tenant_id=g.tenant.id, app_id=a.id) }}">{{ a.title }}</a> — {{ a.status }}</li>
+{% endfor %}
+</ul>
+<form method="post" action="{{ url_for('app_new', tenant_id=g.tenant.id) }}" style="display:inline">
+  <input type="hidden" name="opportunity_id" value="{{ opp.id }}">
+  <input type="hidden" name="title" value="{{ opp.title }} — application">
+  <button class="mini go" type="submit">Start application from template</button>
+</form>
+
+<h2>Edit opportunity</h2>
+<form class="form" method="post">
+  <label>Title <input name="title" value="{{ opp.title }}" required></label>
+  <label>Funder <input name="funder" value="{{ opp.funder }}"></label>
+  <label>Deadline <input type="date" name="deadline" value="{{ opp.deadline }}"></label>
+  <label>Amount (CAD) <input type="number" step="0.01" min="0" name="amount" value="{{ opp.amount }}"></label>
+  <label>Eligibility notes <input name="eligibility_notes" value="{{ opp.eligibility_notes }}"></label>
+  <label>Status <select name="status">{% for s in statuses %}<option value="{{ s }}" {% if s == opp.status %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></label>
+  <label>Notes <input name="notes" value="{{ opp.notes }}"></label>
+  <div class="rowbtns">
+    <button class="btn" type="submit">Save</button>
+    <button class="mini danger" type="submit" name="delete" value="1" onclick="return confirm('Delete this opportunity?')">Delete</button>
+  </div>
+</form>
+{% endblock %}

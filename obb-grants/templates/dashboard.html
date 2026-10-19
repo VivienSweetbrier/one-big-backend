@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ g.tenant.name }}</h1>
+<p class="lede">{{ g.tenant.kind }} — {{ g.tenant.contact_note }}</p>
+
+{% if urgent %}
+<div class="alert"><strong>Deadlines need attention:</strong>
+<ul>
+{% for o, days, band in urgent %}
+<li><a href="{{ url_for('opp_detail', tenant_id=g.tenant.id, opp_id=o.id) }}">{{ o.title }}</a>
+— {% if band == 'past' %}<span class="bad">deadline passed</span>{% else %}<span class="bad">{{ days }} days left</span>{% endif %}</li>
+{% endfor %}
+</ul></div>
+{% endif %}
+{% if soon %}
+<div class="okbox"><strong>Coming up (30 days):</strong>
+<ul>
+{% for o, days, band in soon %}
+<li><a href="{{ url_for('opp_detail', tenant_id=g.tenant.id, opp_id=o.id) }}">{{ o.title }}</a> — {{ days }} days left</li>
+{% endfor %}
+</ul></div>
+{% endif %}
+
+<div class="statgrid">
+  <div class="stat"><span class="num">{{ n_apps }}</span><span class="lbl">drafts in progress</span></div>
+  <div class="stat"><span class="num">{{ n_subs }}</span><span class="lbl">submissions logged</span></div>
+  <div class="stat"><span class="num">${{ "%.0f"|format(won) }}</span><span class="lbl">total won</span></div>
+</div>
+
+<div class="cards">
+  <a class="card" href="{{ url_for('opp_list', tenant_id=g.tenant.id) }}"><strong>Opportunities</strong><span>track funders &amp; deadlines</span></a>
+  <a class="card" href="{{ url_for('reminder_list', tenant_id=g.tenant.id) }}"><strong>Reminders</strong><span>deadline warnings, unread first</span></a>
+  <a class="card" href="{{ url_for('blocks', tenant_id=g.tenant.id) }}"><strong>Boilerplate</strong><span>reusable org profile blocks</span></a>
+  <a class="card" href="{{ url_for('calendar', tenant_id=g.tenant.id) }}"><strong>Calendar</strong><span>deadline warnings</span></a>
+  <a class="card" href="{{ url_for('app_list', tenant_id=g.tenant.id) }}"><strong>Applications</strong><span>collaborative drafting</span></a>
+  <a class="card" href="{{ url_for('tpl_list', tenant_id=g.tenant.id) }}"><strong>Templates</strong><span>per-funder section sets</span></a>
+  <a class="card" href="{{ url_for('sub_list', tenant_id=g.tenant.id) }}"><strong>Submissions</strong><span>log outcomes &amp; awards</span></a>
+</div>
+{% endblock %}

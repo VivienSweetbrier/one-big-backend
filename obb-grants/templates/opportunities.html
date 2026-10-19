@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Opportunities</h1>
+<table class="tbl">
+<tr><th>Title</th><th>Funder</th><th>Deadline</th><th>Amount</th><th>Status</th></tr>
+{% for o, days, band in opps %}
+<tr class="{% if band in ('urgent','past') %}badrow{% endif %}">
+  <td><a href="{{ url_for('opp_detail', tenant_id=g.tenant.id, opp_id=o.id) }}">{{ o.title }}</a></td>
+  <td>{{ o.funder }}</td>
+  <td>{% if band == 'past' %}<span class="bad">passed</span>{% elif band == 'urgent' %}<span class="bad">{{ o.deadline }} ({{ days }}d)</span>{% elif band == 'soon' %}<span class="warnline">{{ o.deadline }} ({{ days }}d)</span>{% else %}{{ o.deadline or '—' }}{% endif %}</td>
+  <td>{% if o.amount %}${{ "%.0f"|format(o.amount) }}{% else %}—{% endif %}</td>
+  <td><span class="tag st-{{ o.status }}">{{ o.status }}</span></td>
+</tr>
+{% endfor %}
+</table>
+{% if not opps %}<p class="empty">No opportunities tracked yet.</p>{% endif %}
+
+<h2>Add opportunity</h2>
+<form class="form" method="post">
+  <label>Title <input name="title" required></label>
+  <label>Funder <input name="funder"></label>
+  <label>Deadline <input type="date" name="deadline"></label>
+  <label>Amount (CAD) <input type="number" step="0.01" min="0" name="amount"></label>
+  <label>Eligibility notes <input name="eligibility_notes"></label>
+  <label>Status <select name="status">{% for s in statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}</select></label>
+  <label>Notes <input name="notes"></label>
+  <button class="btn" type="submit">Add</button>
+</form>
+{% endblock %}

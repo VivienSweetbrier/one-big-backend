@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Shift swaps · {{ shop.name }}{% endblock %}
+{% block content %}
+<h1>Shift swaps</h1>
+
+<h2>Request a swap</h2>
+<form method="post" class="form">
+  <label>My shift
+    <select name="shift_id" required>
+      {% for s in all_shifts %}
+      <option value="{{ s.id }}">{{ days[s.day] }} {{ s.start_minutes|tstr }}–{{ s.end_minutes|tstr }} · {{ s.emp_name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Give it to
+    <select name="to_employee_id" required>
+      {% for e in emps %}<option value="{{ e.id }}">{{ e.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Note <input name="note" placeholder="Why (optional)"></label>
+  <button class="btn" type="submit">Request swap</button>
+</form>
+<p class="hint">Overlaps are blocked automatically. A manager approves below — approval reassigns the shift.</p>
+
+<h2>Requests</h2>
+{% for r in reqs %}
+<div class="rule">
+  <div>
+    <strong>{{ r.from_name }} → {{ r.to_name }}</strong><br>
+    <span>{{ days[r.day] }} {{ r.start_minutes|tstr }}–{{ r.end_minutes|tstr }}</span>
+    {% if r.note %}<br><span class="note">“{{ r.note }}”</span>{% endif %}<br>
+    <span class="tag st-{{ r.status }}">{{ r.status }}</span>
+  </div>
+  {% if r.status == 'pending' and g.user.role == 'manager' %}
+  <div class="rowbtns">
+    <form method="post" action="{{ url_for('approve_swap', shop_id=shop.id, rid=r.id) }}">
+      <button class="mini go" type="submit">Approve</button></form>
+    <form method="post" action="{{ url_for('deny_swap', shop_id=shop.id, rid=r.id) }}">
+      <button class="mini danger" type="submit">Deny</button></form>
+  </div>
+  {% endif %}
+</div>
+{% else %}<p>No swap requests.</p>{% endfor %}
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Deadline reminders</h1>
+<p class="lede">Generated from your opportunity deadlines — 30, 7 and 1 day out, plus overdue. Mark them read as you act on them.</p>
+{% if reminders %}
+<form method="post" action="{{ url_for('reminder_read_all', tenant_id=g.tenant.id) }}">
+  <button class="mini" type="submit">Mark all read</button>
+</form>
+{% for r in reminders %}
+<div class="rule{% if not r.read %} badrow{% endif %}">
+  <div style="flex:1">
+    <strong>{% if not r.read %}<span class="tag bad">new</span> {% endif %}{{ r.message }}</strong>
+    <span class="hint"> · generated {{ r.created }} · <a href="{{ url_for('opp_detail', tenant_id=g.tenant.id, opp_id=r.opportunity_id) }}">{{ r.opp_title }}</a></span>
+  </div>
+  {% if not r.read %}
+  <form method="post" action="{{ url_for('reminder_read', tenant_id=g.tenant.id, rem_id=r.id) }}">
+    <button class="mini go" type="submit">Mark read</button>
+  </form>
+  {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<p class="empty">No reminders yet. They appear here as deadlines approach.</p>
+{% endif %}
+{% endblock %}

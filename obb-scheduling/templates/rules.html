@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Staffing rules · {{ shop.name }}{% endblock %}
+{% block content %}
+<h1>Staffing rules</h1>
+<p class="lede">Rules the scheduler checks every week. The classic: <em>minimum 2 staff on the floor during high-risk hours</em> (Bill 56).</p>
+
+{% for r in rules %}
+<div class="rule {{ 'off' if not r.active }}">
+  <div>
+    <strong>{{ r.name }}</strong><br>
+    <span>At least {{ r.min_staff }} on floor, {{ r.start_minutes|tstr }}–{{ r.end_minutes|tstr }},
+    on {% for d in r.days.split(',') %}{{ days[d|int] }} {% endfor %}</span>
+    {% if not r.active %}<span class="tag">paused</span>{% endif %}
+  </div>
+  {% if g.user.role == 'manager' %}
+  <div class="rowbtns">
+    <form method="post" action="{{ url_for('toggle_rule', shop_id=shop.id, rid=r.id) }}">
+      <button class="mini" type="submit">{{ 'Pause' if r.active else 'Resume' }}</button></form>
+    <form method="post" action="{{ url_for('delete_rule', shop_id=shop.id, rid=r.id) }}" onsubmit="return confirm('Delete this rule?')">
+      <button class="mini danger" type="submit">Delete</button></form>
+  </div>
+  {% endif %}
+</div>
+{% else %}<p>No rules yet — add the Bill 56 one below.</p>{% endfor %}
+
+{% if violations %}
+<div class="alert"><strong>⚠ Current violations</strong>
+<ul>{% for v in violations %}
+<li>{{ v.day_name }} {{ v.start|tstr }}–{{ v.end|tstr }}: “{{ v.rule_name }}” needs {{ v.required }}, only {{ v.actual }}.</li>
+{% endfor %}</ul></div>
+{% endif %}
+
+<h2>Add a rule</h2>
+{% if g.user.role == 'manager' %}
+<form method="post" class="form">
+  <label>Name <input name="name" placeholder="Bill 56 — high-risk hours (8pm–close)"></label>
+  <label>Minimum staff on floor <input name="min_staff" type="number" min="1" value="2" required></label>
+  <label>Window start <input type="time" name="start" value="20:00" required></label>
+  <label>Window end <input type="time" name="end" value="23:00" required></label>
+  <fieldset><legend>Days</legend>
+    {% for i in range(7) %}
+    <label class="chk"><input type="checkbox" name="days" value="{{ i }}" checked> {{ days[i] }}</label>
+    {% endfor %}
+  </fieldset>
+  <button class="btn" type="submit">Add rule</button>
+</form>
+{% else %}
+<p class="hint">Only managers can add or change rules.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}One Big Backend{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}">One Big Backend</a>
+  <nav>
+    {% if g.user %}
+    <a href="{{ url_for('dashboard', shop_id=g.shop.id) }}">Home</a>
+    <a href="{{ url_for('schedule', shop_id=g.shop.id) }}">Schedule</a>
+    <a href="{{ url_for('employee_list', shop_id=g.shop.id) }}">Staff</a>
+    <a href="{{ url_for('rule_list', shop_id=g.shop.id) }}">Rules</a>
+    <a href="{{ url_for('swaps', shop_id=g.shop.id) }}">Swaps</a>
+    <a href="{{ url_for('timeoff', shop_id=g.shop.id) }}">Time off</a>
+    <a href="{{ url_for('availability', shop_id=g.shop.id) }}">Availability</a>
+    <a href="{{ url_for('schedule_history', shop_id=g.shop.id) }}">History / Undo</a>
+    <a href="{{ url_for('notifications', shop_id=g.shop.id) }}">Notifications{% if g.unread %} <span class="nbadge">{{ g.unread }}</span>{% endif %}</a>
+    {% if g.user.role == 'manager' %}
+    <a href="{{ url_for('settings', shop_id=g.shop.id) }}">Settings</a>
+    {% endif %}
+    {% endif %}
+    <a href="{{ url_for('coop') }}">Co-op</a>
+  </nav>
+  {% if g.user %}
+  <span class="whoami">{{ g.user.username }} · {{ g.user.role }} · <a href="{{ url_for('logout') }}">log out</a></span>
+  {% endif %}
+</header>
+<main class="wrap">
+  {% if g.shop %}<p class="shoptag">Shop: <strong>{{ g.shop.name }}</strong></p>{% endif %}
+  {% with msgs = get_flashed_messages() %}
+    {% if msgs %}<div class="flash">{% for m in msgs %}<p>{{ m }}</p>{% endfor %}</div>{% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="foot">One Big Backend · co-op scheduling prototype · nothing can plug it</footer>
+</body>
+</html>

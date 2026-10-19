@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Deadline calendar</h1>
+<p class="lede">Active opportunities (researching / drafting), soonest first.
+Red = 7 days or less (or passed). Amber = 30 days or less.</p>
+<table class="tbl">
+<tr><th>Deadline</th><th>Opportunity</th><th>Funder</th><th>Amount</th><th>Status</th></tr>
+{% for o, days, band in opps %}
+<tr class="{% if band in ('urgent','past') %}badrow{% endif %}">
+  <td>{% if band == 'past' %}<span class="bad">{{ o.deadline }} — passed</span>{% elif band == 'urgent' %}<span class="bad">{{ o.deadline }} — {{ days }}d</span>{% elif band == 'soon' %}<span class="warnline">{{ o.deadline }} — {{ days }}d</span>{% else %}{{ o.deadline }}{% endif %}</td>
+  <td><a href="{{ url_for('opp_detail', tenant_id=g.tenant.id, opp_id=o.id) }}">{{ o.title }}</a></td>
+  <td>{{ o.funder }}</td>
+  <td>{% if o.amount %}${{ "%.0f"|format(o.amount) }}{% else %}—{% endif %}</td>
+  <td>{{ o.status }}</td>
+</tr>
+{% endfor %}
+</table>
+{% if not opps %}<p class="empty">No active deadlines.</p>{% endif %}
+{% endblock %}

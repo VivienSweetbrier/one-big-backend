@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Submission log</h1>
+<div class="statgrid">
+  <div class="stat"><span class="num">{{ totals.c }}</span><span class="lbl">submissions</span></div>
+  <div class="stat"><span class="num">${{ "%.0f"|format(totals.won) }}</span><span class="lbl">total awarded</span></div>
+</div>
+<table class="tbl">
+<tr><th>Submitted</th><th>Application</th><th>Funder</th><th>Outcome</th><th>Award</th><th></th></tr>
+{% for s in subs %}
+<tr>
+  <td>{{ s.submitted_at }}</td>
+  <td>{{ s.title }}</td>
+  <td>{{ s.funder }}</td>
+  <td>
+    <form method="post" style="display:flex;gap:.3rem;align-items:center">
+      <input type="hidden" name="sub_id" value="{{ s.id }}">
+      <select name="outcome">{% for o in outcomes %}<option value="{{ o }}" {% if o == s.outcome %}selected{% endif %}>{{ o }}</option>{% endfor %}</select>
+      <input type="number" step="0.01" min="0" name="award_amount" value="{{ s.award_amount }}" style="width:7em" placeholder="$">
+      <button class="mini go" type="submit">Save</button>
+    </form>
+  </td>
+  <td>{% if s.award_amount %}${{ "%.0f"|format(s.award_amount) }}{% else %}—{% endif %}</td>
+  <td class="note">{{ s.notes }}</td>
+</tr>
+{% endfor %}
+</table>
+{% if not subs %}<p class="empty">Nothing submitted yet.</p>{% endif %}
+{% endblock %}

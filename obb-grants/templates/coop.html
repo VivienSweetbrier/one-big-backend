@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Co-op dashboard</h1>
+<p class="lede">Aggregate view across member organizations. Totals only —
+no tenant's opportunities, drafts, or submissions are visible here.</p>
+<div class="statgrid">
+  <div class="stat"><span class="num">{{ totals.c }}</span><span class="lbl">submissions co-op wide</span></div>
+  <div class="stat"><span class="num">${{ "%.0f"|format(totals.won) }}</span><span class="lbl">total awarded</span></div>
+</div>
+<table class="tbl">
+<tr><th>Member</th><th>Type</th><th>Active opps</th><th>Drafting</th><th>Submissions</th><th>Awarded</th></tr>
+{% for r in rows %}
+<tr>
+  <td>{{ r.name }}</td>
+  <td>{{ r.kind }}</td>
+  <td>{{ r.active_opps }}</td>
+  <td>{{ r.drafting }}</td>
+  <td>{{ r.subs }}</td>
+  <td>{% if r.won_total %}${{ "%.0f"|format(r.won_total) }}{% else %}—{% endif %}</td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

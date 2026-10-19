@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Time off · {{ shop.name }}{% endblock %}
+{% block content %}
+<h1>Time off</h1>
+<p class="lede">Approved time-off blocks scheduling — the manager can't put you on a shift inside it.</p>
+
+<h2>Request time off</h2>
+<form method="post" class="form">
+  {% if g.user.role == 'manager' %}
+  <label>Employee
+    <select name="employee_id" required>
+      {% for e in emps %}<option value="{{ e.id }}" {% if me and e.id == me.id %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+    </select>
+  </label>
+  {% else %}
+  {% if me %}<p class="hint">Requesting for <strong>{{ me.name }}</strong>.</p>
+  {% else %}<p class="hint">Your login isn't linked to a staff member — ask a manager.</p>{% endif %}
+  {% endif %}
+  <label>Week
+    <select name="week">
+      {% for w in range(max_week + 1) %}<option value="{{ w }}">Week {{ w + 1 }}{% if w == 0 %} (this week){% endif %}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Day
+    <select name="day" required>
+      {% for i in range(7) %}<option value="{{ i }}">{{ days[i] }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>From <input type="time" name="start" required></label>
+  <label>Until <input type="time" name="end" required></label>
+  <label>Reason <input name="reason" placeholder="Why (optional)"></label>
+  <button class="btn" type="submit" {% if g.user.role != 'manager' and not me %}disabled{% endif %}>Request time off</button>
+</form>
+
+<h2>Requests</h2>
+{% for t in rows %}
+<div class="rule">
+  <div>
+    <strong>{{ t.emp_name }}</strong> · week {{ t.week + 1 }}, {{ days[t.day] }}
+    {{ t.start_minutes|tstr }}–{{ t.end_minutes|tstr }}<br>
+    {% if t.reason %}<span class="note">“{{ t.reason }}”</span><br>{% endif %}
+    <span class="tag st-{{ t.status }}">{{ t.status }}</span>
+  </div>
+  {% if t.status == 'pending' and g.user.role == 'manager' %}
+  <div class="rowbtns">
+    <form method="post" action="{{ url_for('approve_timeoff', shop_id=shop.id, tid=t.id) }}">
+      <button class="mini go" type="submit">Approve</button></form>
+    <form method="post" action="{{ url_for('deny_timeoff', shop_id=shop.id, tid=t.id) }}">
+      <button class="mini danger" type="submit">Deny</button></form>
+  </div>
+  {% endif %}
+</div>
+{% else %}<p>No time-off requests.</p>{% endfor %}
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Notifications · {{ shop.name }}{% endblock %}
+{% block content %}
+<h1>Notifications</h1>
+<p class="lede">Shift assignments, swap decisions, time-off decisions, staffing violations.
+In-app for now — email/SMS plugs into <code>NOTIFICATION_SENDERS</code> in app.py later.</p>
+
+<form method="post" action="{{ url_for('notifications_read', shop_id=shop.id) }}">
+  <input type="hidden" name="id" value="all">
+  <button class="mini" type="submit">Mark all read</button>
+</form>
+
+{% for n in rows %}
+<div class="rule {{ 'off' if n.read }}">
+  <div>
+    <strong>{{ n.kind.replace('_', ' ') }}</strong><br>
+    <span>{{ n.text }}</span><br>
+    <span>{{ n.created }}{% if n.read %} · read{% endif %}</span>
+  </div>
+  <div class="rowbtns">
+    {% if n.link %}<a class="mini" href="{{ n.link }}">View</a>{% endif %}
+    {% if not n.read %}
+    <form method="post" action="{{ url_for('notifications_read', shop_id=shop.id) }}">
+      <input type="hidden" name="id" value="{{ n.id }}">
+      <button class="mini go" type="submit">Mark read</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% else %}<p>No notifications yet.</p>{% endfor %}
+{% endblock %}
