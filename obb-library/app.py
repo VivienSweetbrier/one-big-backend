@@ -146,11 +146,15 @@ def seed_default_libraries():
             return
         st_ig = run(
             "INSERT INTO libraries (name, parish_or_org, address_note, loan_days) VALUES (?,?,?,?)",
-            ("Spiritual Education Centre Lending Library", "St. Ignatius Parish", "255 Stafford St, Winnipeg", 21),
+            ("Spiritual Education Centre Lending Library", "St. Ignatius Parish", "925 Jessie Ave / 255 Stafford St, Winnipeg (Coord: Carmela Castellano Sinclair, 204-453-9243)", 21),
         )
         holy_rosary = run(
             "INSERT INTO libraries (name, parish_or_org, address_note, loan_days) VALUES (?,?,?,?)",
             ("Parish Ministry & Youth Resource Shelf", "Holy Rosary Parish", "510 River Ave, Winnipeg", 14),
+        )
+        st_pauls = run(
+            "INSERT INTO libraries (name, parish_or_org, address_note, loan_days) VALUES (?,?,?,?)",
+            ("Jesuit Centre for Catholic Studies & Mauro Peace Shelf", "St. Paul's College (University of Manitoba)", "70 Dysart Rd, U of M Fort Garry Campus (204-474-8575)", 28),
         )
         catalog = [
             ("IGN-001", "The Spiritual Exercises of St. Ignatius", "St. Ignatius of Loyola (trans. Louis J. Puhl, S.J.)", "Ignatian Spirituality", 3, 2, "Core retreat companion"),
@@ -184,6 +188,11 @@ def seed_default_libraries():
             "INSERT INTO books (library_id, call_number, title, author, category, copies_total, copies_available, notes)"
             " VALUES (?,?,?,?,?,?,?,?)",
             (holy_rosary, "ITA-001", "I Fioretti di San Francesco (Bilingual IT/EN)", "Ugolino Brunforte", "Bilingual Devotional", 2, 2, "Italian/English parish collection"),
+        )
+        run(
+            "INSERT INTO books (library_id, call_number, title, author, category, copies_total, copies_available, notes)"
+            " VALUES (?,?,?,?,?,?,?,?)",
+            (st_pauls, "SPC-001", "Finding God in All Things: Ignatian Humanism & Social Justice", "Jesuit Centre for Catholic Studies", "Ignatian Pedagogy", 3, 3, "St. Paul's College / Mauro Institute seminar reader"),
         )
 
 
@@ -422,3 +431,29 @@ def undo_library(lib_id):
     run("UPDATE library_commits SET reverted=1 WHERE commit_hash=?", (undo_hash,))
     flash(f"Undid '{c['summary']}' (commit {undo_hash[:7]}).")
     return redirect(url_for("library_home", lib_id=lib_id))
+
+
+@app.route("/lib/<int:lib_id>/embed")
+def embed_catalog_widget(lib_id):
+    """Bit-rot-proof, zero-JS read-only catalog widget that parishes like stignatius.ca
+    can drop in via a single <iframe> or direct link when their legacy CMS throws HTTP 500."""
+    lib = q1("SELECT * FROM libraries WHERE id=?", (lib_id,))
+    if not lib:
+        return "Library not found", 404
+    books = q("SELECT * FROM books WHERE library_id=? ORDER BY call_number, title", (lib_id,))
+    rows = "".join(
+        f"<tr><td><code>{b['call_number']}</code></td><td><strong>{b['title']}</strong> — {b['author']}</td>"
+        f"<td>{b['category']}</td><td>{b['copies_available']}/{b['copies_total']} available</td></tr>"
+        for b in books
+    )
+    html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+    <title>{lib['name']} · Bit-Rot-Proof Catalog</title>
+    <style>body{{font-family:system-ui,sans-serif;margin:1rem;background:#faf8f5;color:#1f2421}}
+    table{{width:100%;border-collapse:collapse;background:#fff}}th,td{{border:1px solid #d8d4cc;padding:.5rem;text-align:left;font-size:.9rem}}th{{background:#f0ede6}}</style>
+    </head><body>
+    <h2 style="margin:0 0 .25rem">{lib['parish_or_org']} — {lib['name']}</h2>
+    <p style="margin:0 0 .8rem;color:#5c6460;font-size:.88rem">{lib['address_note']} · Powered by One Big Backend (Zero-Bit-Rot SQLite + Git Undo)</p>
+    <table><tr><th>Call #</th><th>Title &amp; Author</th><th>Category</th><th>Availability</th></tr>{rows}</table>
+    </body></html>"""
+    return html
+
