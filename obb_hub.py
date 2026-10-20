@@ -18,73 +18,87 @@ import sys
 import time
 from flask import Flask, render_template_string
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("OBB_SECRET", "obb-prototype-dev-key")
 
-MODULES = [
-    {
-        "id": "jesuit-parish",
-        "badge": "⛪ JESUIT & PARISH CORRIDOR (Port 5059)",
-        "title": "St. Ignatius Spiritual Library (925 Jessie Ave) & St. Paul's College (U of M)",
-        "who": "Carmela Castellano Sinclair (204-453-9243) · Fr. Frank Obrigewitsch, SJ · Rector Chris Adams & Dr. Daniel MacLeod (70 Dysart Rd) · Holy Rosary",
-        "pitch": "\"Software should work a little more like Catholic Grace and a little less like Calvinism.\" Rescues stignatius.ca/education-centre/ from legacy CMS HTTP 500 bit-rot with a single-file SQLite catalog and 1-Click Git Undo.",
-        "links": [
-            ("Open St. Ignatius Library (925 Jessie Ave)", "http://127.0.0.1:5059/lib/1"),
-            ("Open stignatius.ca Bit-Rot Rescue Embed", "http://127.0.0.1:5059/lib/1/embed"),
-            ("Open St. Paul's College (U of M) Shelf", "http://127.0.0.1:5059/lib/3"),
-            ("Open Holy Rosary Bilingual Shelf", "http://127.0.0.1:5059/lib/2"),
-        ],
-    },
-    {
-        "id": "schools-safety",
-        "badge": "🛡️ CATHOLIC & PUBLIC SCHOOLS (Port 5061)",
-        "title": "K–8 Child Threat-Recognition & Zero-PII Cybersafety Floor",
-        "who": "Manitoba Catholic Schools (Supt. Bob Praznik, St. Ignatius, Christ the King, St. Emile, Holy Ghost) · Men's Group · All 6 Winnipeg Public School Divisions",
-        "pitch": "Splits the difference with 100% parent-auditable behavioural threat recognition (Safe Surprises vs. Unsafe Secrets, Spotting Manipulation, Gaming/Chat Traps) + Parent Dinner-Table Scripts. Zero student PII (bypasses FIPPA/PIPEDA PIA bottlenecks).",
-        "links": [
-            ("Open Manitoba Catholic Schools Floor", "http://127.0.0.1:5061/board/1"),
-            ("Open Winnipeg Public Divisions Floor", "http://127.0.0.1:5061/board/2"),
-            ("Inspect FIPPA / PIPEDA / Safe-Environment Shield", "http://127.0.0.1:5061/compliance"),
-        ],
-    },
-    {
-        "id": "shops-scheduling",
-        "badge": "🏪 INDEPENDENT SHOPS, BREWERIES & DISPENSARIES (Port 5057)",
-        "title": "Co-op Shift Scheduler, Manitoba Bill 56 Guard & Bayesian M/G/c Forecaster",
-        "who": "Big Buds · Lucy's · Chronic Canada · Patent 5 · Nonsuch · Little Brown Jug · Kilter · Good Neighbour (Demo Login: marleen / demo-pass)",
-        "pitch": "The 10-second walk-in closer: log in as Marleen, click 'Clear week' (watch all 27 shifts vanish and Bill 56 alarms light up), then hit '↶ Undo last change' to snap all 27 shifts back. Plus 1-Click Bayesian Rush Auto-Staffing.",
-        "links": [
-            ("Open Big Buds Schedule (Nuke & Undo Demo)", "http://127.0.0.1:5057/shop/1/schedule"),
-            ("Open Bayesian M/G/c Rush Forecaster (c* Auto-Staff)", "http://127.0.0.1:5057/shop/1/forecast"),
-            ("Open Schedule Git Commit History", "http://127.0.0.1:5057/shop/1/history"),
-        ],
-    },
-    {
-        "id": "freemium-undo",
-        "badge": "↶ FREEMIUM SAAS FOR EVERY SMALL BUSINESS (Port 5060)",
-        "title": "The Universal Undo Button (Tier 0 Free Forever → Tier 1 Co-op Pro)",
-        "who": "Portage Ave Tailor · Farmers' Market Vendors · Parish Treasurers · Credit Union Small-Biz Members",
-        "pitch": "Detects when someone accidentally overwrites an Excel formula (=Qty*UnitCost) with a hardcoded number or deletes a row, and restores the exact prior state in one click.",
-        "links": [
-            ("Open Portage Ave Tailor Clobbered-Formula Demo", "http://127.0.0.1:5060/ds/1"),
-            ("Open St. Ignatius Parish Hall Booking Demo", "http://127.0.0.1:5060/ds/2"),
-            ("View Freemium Co-op Pricing Tiers", "http://127.0.0.1:5060/pricing"),
-        ],
-    },
-    {
-        "id": "grants-pipeline",
-        "badge": "📋 CO-OPS, UNIONS & NON-PROFITS (Port 5058)",
-        "title": "Co-op Grant Pipeline, Shared Boilerplates & Section Revision Undo",
-        "who": "CUPE 3909 (U of M TAs) · Assiniboine Credit Union · Red River Co-op · Harvest Manitoba · Parish Councils",
-        "pitch": "Shared grant deadline radar (30/7/1-day alerts), reusable co-op boilerplate paragraphs, CSV budget importer, and 1-Click Git Undo on every application section.",
-        "links": [
-            ("Open Tailor Shop Grant Pipeline", "http://127.0.0.1:5058/t/1/opps"),
-            ("Open Collaborative Grant Drafter + 1-Click Undo", "http://127.0.0.1:5058/t/1/apps/1"),
-        ],
-    },
-]
+def get_modules_for_host(host: str):
+    is_public = "sweetbrier.lol" in (host or "").lower()
+    u_sched = "https://scheduling.sweetbrier.lol" if is_public else "http://127.0.0.1:5057"
+    u_grant = "https://grants.sweetbrier.lol" if is_public else "http://127.0.0.1:5058"
+    u_lib   = "https://library.sweetbrier.lol" if is_public else "http://127.0.0.1:5059"
+    u_undo  = "https://undo.sweetbrier.lol" if is_public else "http://127.0.0.1:5060"
+    u_safe  = "https://safety.sweetbrier.lol" if is_public else "http://127.0.0.1:5061"
+
+    return [
+        {
+            "id": "jesuit-parish",
+            "badge": "⛪ JESUIT & PARISH CORRIDOR (library.sweetbrier.lol)",
+            "title": "St. Ignatius Spiritual Library (925 Jessie Ave) & St. Paul's College (U of M)",
+            "who": "Carmela Castellano Sinclair (204-453-9243) · Fr. Frank Obrigewitsch, SJ · Rector Chris Adams & Dr. Daniel MacLeod (70 Dysart Rd) · Holy Rosary",
+            "pitch": "\"Software should work a little more like Catholic Grace and a little less like Calvinism.\" Rescues stignatius.ca/education-centre/ from legacy CMS HTTP 500 bit-rot with a single-file SQLite catalog and 1-Click Git Undo.",
+            "links": [
+                ("Open St. Ignatius Library (925 Jessie Ave)", f"{u_lib}/lib/1"),
+                ("Open stignatius.ca Bit-Rot Rescue Embed", f"{u_lib}/lib/1/embed"),
+                ("Open St. Paul's College (U of M) Shelf", f"{u_lib}/lib/3"),
+                ("Open Holy Rosary Bilingual Shelf", f"{u_lib}/lib/2"),
+            ],
+        },
+        {
+            "id": "schools-safety",
+            "badge": "🛡️ CATHOLIC & PUBLIC SCHOOLS (safety.sweetbrier.lol)",
+            "title": "K–8 Child Threat-Recognition & Zero-PII Cybersafety Floor",
+            "who": "Manitoba Catholic Schools (Supt. Bob Praznik, St. Ignatius, Christ the King, St. Emile, Holy Ghost) · Men's Group · All 6 Winnipeg Public School Divisions",
+            "pitch": "Splits the difference with 100% parent-auditable behavioural threat recognition (Safe Surprises vs. Unsafe Secrets, Spotting Manipulation, Gaming/Chat Traps) + Parent Dinner-Table Scripts. Zero student PII (bypasses FIPPA/PIPEDA PIA bottlenecks).",
+            "links": [
+                ("Open Manitoba Catholic Schools Floor", f"{u_safe}/board/1"),
+                ("Open Winnipeg Public Divisions Floor", f"{u_safe}/board/2"),
+                ("Inspect FIPPA / PIPEDA / Safe-Environment Shield", f"{u_safe}/compliance"),
+            ],
+        },
+        {
+            "id": "shops-scheduling",
+            "badge": "🏪 INDEPENDENT SHOPS, BREWERIES & DISPENSARIES (scheduling.sweetbrier.lol)",
+            "title": "Co-op Shift Scheduler, Manitoba Bill 56 Guard & Bayesian M/G/c Forecaster",
+            "who": "Big Buds · Lucy's · Chronic Canada · Patent 5 · Nonsuch · Little Brown Jug · Kilter · Good Neighbour (Demo Login: marleen / demo-pass)",
+            "pitch": "The 10-second walk-in closer: log in as Marleen, click 'Clear week' (watch all 27 shifts vanish and Bill 56 alarms light up), then hit '↶ Undo last change' to snap all 27 shifts back. Plus 1-Click Bayesian Rush Auto-Staffing.",
+            "links": [
+                ("Open Big Buds Schedule (Nuke & Undo Demo)", f"{u_sched}/shop/1/schedule"),
+                ("Open Bayesian M/G/c Rush Forecaster (c* Auto-Staff)", f"{u_sched}/shop/1/forecast"),
+                ("Open Schedule Git Commit History", f"{u_sched}/shop/1/history"),
+            ],
+        },
+        {
+            "id": "freemium-undo",
+            "badge": "↶ FREEMIUM SAAS FOR EVERY SMALL BUSINESS (undo.sweetbrier.lol)",
+            "title": "The Universal Undo Button (Tier 0 Free Forever → Tier 1 Co-op Pro)",
+            "who": "Portage Ave Tailor · Farmers' Market Vendors · Parish Treasurers · Credit Union Small-Biz Members",
+            "pitch": "Detects when someone accidentally overwrites an Excel formula (=Qty*UnitCost) with a hardcoded number or deletes a row, and restores the exact prior state in one click.",
+            "links": [
+                ("Open Portage Ave Tailor Clobbered-Formula Demo", f"{u_undo}/ds/1"),
+                ("Open St. Ignatius Parish Hall Booking Demo", f"{u_undo}/ds/2"),
+                ("View Freemium Co-op Pricing Tiers", f"{u_undo}/pricing"),
+            ],
+        },
+        {
+            "id": "grants-pipeline",
+            "badge": "📋 CO-OPS, UNIONS & NON-PROFITS (grants.sweetbrier.lol)",
+            "title": "Co-op Grant Pipeline, Shared Boilerplates & Section Revision Undo",
+            "who": "CUPE 3909 (U of M TAs) · Assiniboine Credit Union · Red River Co-op · Harvest Manitoba · Parish Councils",
+            "pitch": "Shared grant deadline radar (30/7/1-day alerts), reusable co-op boilerplate paragraphs, CSV budget importer, and 1-Click Git Undo on every application section.",
+            "links": [
+                ("Open Tailor Shop Grant Pipeline", f"{u_grant}/t/1/opps"),
+                ("Open Collaborative Grant Drafter + 1-Click Undo", f"{u_grant}/t/1/apps/1"),
+            ],
+        },
+    ]
+
+
+MODULES = get_modules_for_host("127.0.0.1")
 
 HUB_HTML = """
 <!doctype html>
@@ -110,7 +124,7 @@ HUB_HTML = """
   <div>
     <strong style="font-size:1.15rem">🧦⚙️🧦 One Big Backend — Winnipeg Walk-In Demo Switchboard</strong>
   </div>
-  <div style="font-size:.86rem">GNU AGPLv3 · Member-Owned Co-op Infrastructure · All 5 Services Active</div>
+  <div style="font-size:.86rem">onebigbackend.sweetbrier.lol · GNU AGPLv3 · Member-Owned Co-op Infrastructure</div>
 </header>
 <main class="wrap">
   <div class="quote-box">
@@ -138,7 +152,8 @@ HUB_HTML = """
 
 @app.route("/")
 def index():
-    return render_template_string(HUB_HTML, modules=MODULES)
+    from flask import request
+    return render_template_string(HUB_HTML, modules=get_modules_for_host(request.host))
 
 
 def start_all_subservices():
