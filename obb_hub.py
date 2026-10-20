@@ -26,6 +26,16 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
 app.secret_key = os.environ.get("OBB_SECRET", "obb-prototype-dev-key")
 
+
+@app.after_request
+def apply_security_headers(response):
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self'"
+    return response
+
 def get_modules_for_host(host: str):
     is_public = "sweetbrier.lol" in (host or "").lower()
     u_sched = "https://scheduling.sweetbrier.lol" if is_public else "http://127.0.0.1:5057"
