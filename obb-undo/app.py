@@ -238,7 +238,188 @@ def seed_default_workspaces():
         _commit_dataset_state(ds2, "Co-op Sync", "Opening shared SKU sheet", s_coop)
 
 
+def ensure_ontology_workspaces_seeded():
+    """Seeds the Weed Store Ontology & Palantir AIP / Winnipeg Ontology Lab demos idempotently."""
+    with app.app_context():
+        existing = {r["name"] for r in q("SELECT name FROM workspaces")}
+
+        # Workspace 3: Weed Store Ontology (LGCA / CTLS Compliance & Shift Graph)
+        weed_ws_name = "Osborne & Corydon Cannabis Co-op (Weed Store Ontology)"
+        if weed_ws_name not in existing:
+            w_weed = run(
+                "INSERT INTO workspaces (name, owner_note, tier, formulas_saved, undos_performed) VALUES (?,?,?,?,?)",
+                (
+                    weed_ws_name,
+                    "LGCA Excise, Vault Lot & Bill 56 Shift Ontology — Everyone gets an ontology",
+                    "pro",
+                    9,
+                    4,
+                ),
+            )
+            ds_weed = run(
+                "INSERT INTO datasets (workspace_id, name, format_kind, primary_key_col) VALUES (?,?,?,?)",
+                (w_weed, "LGCA_Vault_and_Excise_Ontology.ont", "ontology", "Ontology_Node"),
+            )
+            weed_clean_rows = [
+                {
+                    "Ontology_Node": "OBJ:LOT-MB-420",
+                    "ObjectType": "Cannabis_Flower_Lot",
+                    "LinkType": "STORED_IN -> Vault_A",
+                    "LiveState": "840g_Sealed",
+                    "OntologyInvariant": "840g ( matches Vault - POS )",
+                },
+                {
+                    "Ontology_Node": "OBJ:ROSIN-HASH-09",
+                    "ObjectType": "Pressed_Rosin_Batch",
+                    "LinkType": "STAMPED_BY -> Excise_MB_991",
+                    "LiveState": "125g_Cured",
+                    "OntologyInvariant": "LGCA_COMPLIANT",
+                },
+                {
+                    "Ontology_Node": "OBJ:SHIFT-FRI-RUSH",
+                    "ObjectType": "Budtender_Shift_Node",
+                    "LinkType": "STAFFED_BY -> Anisha + 2",
+                    "LiveState": "3_Staff_On_Floor",
+                    "OntologyInvariant": "BILL56_SAFE (P_sat < 0.01)",
+                },
+            ]
+            weed_clean_formulas = {
+                ("OBJ:LOT-MB-420", "OntologyInvariant"): "=Vault_Grams - POS_Sold_Grams",
+                ("OBJ:ROSIN-HASH-09", "OntologyInvariant"): "=IF(Variance==0, 'LGCA_COMPLIANT', 'AUDIT_HOLD')",
+                ("OBJ:SHIFT-FRI-RUSH", "OntologyInvariant"): "=Weibull_M_G_c_MinStaff(k=0.8) >= 3",
+            }
+            s_weed_clean = FormatSpecificNormalizer.from_table_rows(
+                "WeedOntology", weed_clean_rows, "Ontology_Node", weed_clean_formulas
+            )
+            _commit_dataset_state(
+                ds_weed,
+                "Morning Vault Open (Node 1 Verified)",
+                "Initialized LGCA Cannabis Lot + Bill 56 Shift Ontology Graph with active invariants",
+                s_weed_clean,
+            )
+
+            weed_bad_rows = [
+                {
+                    "Ontology_Node": "OBJ:LOT-MB-420",
+                    "ObjectType": "Cannabis_Flower_Lot",
+                    "LinkType": "STORED_IN -> Vault_A",
+                    "LiveState": "420g_Unverified",
+                    "OntologyInvariant": "420g looks fine bro",
+                },
+                {
+                    "Ontology_Node": "OBJ:ROSIN-HASH-09",
+                    "ObjectType": "Pressed_Rosin_Batch",
+                    "LinkType": "STAMPED_BY -> Excise_MB_991",
+                    "LiveState": "125g_Cured",
+                    "OntologyInvariant": "SKIP_CTLS_CHECK",
+                },
+            ]
+            s_weed_bad = FormatSpecificNormalizer.from_table_rows(
+                "WeedOntology", weed_bad_rows, "Ontology_Node", {}
+            )
+            _commit_dataset_state(
+                ds_weed,
+                "11:45 PM POS Sync / Tired Closer",
+                "Overwrote LOT-MB-420 Excise invariant with '420g looks fine bro' & deleted Friday Rush shift node!",
+                s_weed_bad,
+                formulas_clobbered=2,
+            )
+
+        # Workspace 4: Palantir AIP / Foundry & Winnipeg Ontology Partner
+        pal_ws_name = "Palantir AIP / Foundry & Winnipeg Ontology Lab"
+        if pal_ws_name not in existing:
+            w_pal = run(
+                "INSERT INTO workspaces (name, owner_note, tier, formulas_saved, undos_performed) VALUES (?,?,?,?,?)",
+                (
+                    pal_ws_name,
+                    "Kinetic Action Rollback & Link-Invariant Shield for Enterprise Ontologies",
+                    "patron",
+                    42,
+                    12,
+                ),
+            )
+            ds_pal = run(
+                "INSERT INTO datasets (workspace_id, name, format_kind, primary_key_col) VALUES (?,?,?,?)",
+                (w_pal, "Foundry_AIP_SupplyChain_Ontology_Graph.ont", "ontology", "Ontology_Node"),
+            )
+            pal_clean_rows = [
+                {
+                    "Ontology_Node": "OBJ:DEPOT-WPG-01",
+                    "ObjectType": "Prairie_Logistics_Hub",
+                    "LinkType": "FEEDS -> Northern_Corridor",
+                    "LiveState": "1400_Pallets_Active",
+                    "OntologyInvariant": "36h_Buffered_Lead_Time",
+                },
+                {
+                    "Ontology_Node": "OBJ:WPG-ONTOLOGY-GUILD",
+                    "ObjectType": "Winnipeg_Ontology_Partner",
+                    "LinkType": "ANCHORED_AT -> Parish_Commons",
+                    "LiveState": "Sovereign_Sync_OK",
+                    "OntologyInvariant": "SACRAMENTAL_AUDIT_INTACT",
+                },
+                {
+                    "Ontology_Node": "ACT:AIP-KINETIC-07",
+                    "ObjectType": "AIP_Agent_ActionType",
+                    "LinkType": "MUTATES -> OBJ:DEPOT-WPG-01",
+                    "LiveState": "Gated_By_Modal_Box",
+                    "OntologyInvariant": "MODAL_BOX_ATTESTED",
+                },
+            ]
+            pal_clean_formulas = {
+                ("OBJ:DEPOT-WPG-01", "OntologyInvariant"): "=MIN_LEAD_TIME(CN_Rail, Hwy_75) * Weibull_Buffer(1.35)",
+                ("OBJ:WPG-ONTOLOGY-GUILD", "OntologyInvariant"): "=PRESERVE_SACRAMENTAL_AUDIT_TRAIL(Node_0_Dignity)",
+                ("ACT:AIP-KINETIC-07", "OntologyInvariant"): "=REQUIRE_MODAL_BOX_ATTESTATION(Human_Signoff)",
+            }
+            s_pal_clean = FormatSpecificNormalizer.from_table_rows(
+                "FoundryOntology", pal_clean_rows, "Ontology_Node", pal_clean_formulas
+            )
+            _commit_dataset_state(
+                ds_pal,
+                "Forward Deployed Architect",
+                "Committed sovereign Object-Link-Action Ontology with Modal Box (□) invariants",
+                s_pal_clean,
+            )
+
+            pal_bad_rows = [
+                {
+                    "Ontology_Node": "OBJ:DEPOT-WPG-01",
+                    "ObjectType": "Prairie_Logistics_Hub",
+                    "LinkType": "BROKEN_LINK -> NULL",
+                    "LiveState": "REROUTED_BY_LLM",
+                    "OntologyInvariant": "48_HRS_HALLUCINATED_STATIC_OVERRIDE",
+                },
+                {
+                    "Ontology_Node": "OBJ:WPG-ONTOLOGY-GUILD",
+                    "ObjectType": "Winnipeg_Ontology_Partner",
+                    "LinkType": "ANCHORED_AT -> Parish_Commons",
+                    "LiveState": "Sovereign_Sync_OK",
+                    "OntologyInvariant": "SACRAMENTAL_AUDIT_INTACT",
+                },
+                {
+                    "Ontology_Node": "ACT:AIP-KINETIC-07",
+                    "ObjectType": "AIP_Agent_ActionType",
+                    "LinkType": "MUTATES -> OBJ:DEPOT-WPG-01",
+                    "LiveState": "UNSUPERVISED_AUTO_WRITE",
+                    "OntologyInvariant": "BYPASSED_HUMAN_GATE",
+                },
+            ]
+            pal_bad_formulas = {
+                ("OBJ:WPG-ONTOLOGY-GUILD", "OntologyInvariant"): "=PRESERVE_SACRAMENTAL_AUDIT_TRAIL(Node_0_Dignity)",
+            }
+            s_pal_bad = FormatSpecificNormalizer.from_table_rows(
+                "FoundryOntology", pal_bad_rows, "Ontology_Node", pal_bad_formulas
+            )
+            _commit_dataset_state(
+                ds_pal,
+                "AIP_LLM_Agent_v4 (Kinetic Writeback)",
+                "Executed Kinetic Action #881: clobbered DEPOT-WPG-01 Weibull lead-time rule with static override & bypassed Modal Box!",
+                s_pal_bad,
+                formulas_clobbered=2,
+            )
+
+
 seed_default_workspaces()
+ensure_ontology_workspaces_seeded()
 
 
 BASE_HTML = """
@@ -310,11 +491,11 @@ def index():
             f"</div>"
         )
     content = f"""
-    <h1>The Universal Undo Button for Small Business</h1>
+    <h1>The Universal Undo Button — For Spreadsheets &amp; Ontologies</h1>
     <p style="font-size:1.08rem;color:var(--muted)">
-      Dropbox and Google Drive save dead binary blobs. <strong>One Big Backend</strong> gives your spreadsheets,
-      inventory lists, and POS exports a true <strong>Git time-machine</strong> and a <strong>Formula-Clobber shield</strong>.
-      <strong>Free forever</strong> for solo shops and nonprofits; paid or bartered for multi-manager co-op teams.
+      <strong>Everyone gets an ontology. Everyone gets an undo button for their ontology.</strong><br>
+      Dropbox and Google Drive save dead binary blobs, and enterprise AI agents mutate live Object/Link graphs without an atomic rollback.
+      <strong>One Big Backend</strong> gives your spreadsheets, weed store LGCA compliance graphs, parish libraries, and Palantir AIP digital twins a true <strong>SHA-256 Git time-machine</strong> and an <strong>Ontology Invariant / Formula-Clobber shield</strong>.
     </p>
     <div class="cards">{''.join(ws_cards)}</div>
     """
@@ -431,22 +612,80 @@ def dataset_view(ds_id):
 
     content = f"""
     <p><a href="/">← All Workspaces</a> · Workspace: <strong>{ws['name']}</strong> (<span class="badge {ws['tier']}">{ws['tier'].upper()}</span>)</p>
-    <h1>{ds['name']}</h1>
-    <p style="color:var(--muted)">HEAD Commit: <code>{head_commit['commit_hash'] if head_commit else 'none'}</code> · Merkle Root: <code>{head_commit['merkle_root'][:16] if head_commit else ''}...</code></p>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.8rem">
+      <div>
+        <h1 style="margin:0">{ds['name']}</h1>
+        <p style="color:var(--muted);margin:.3rem 0 0">HEAD Commit: <code>{head_commit['commit_hash'] if head_commit else 'none'}</code> · Merkle Root: <code>{head_commit['merkle_root'][:16] if head_commit else ''}...</code></p>
+      </div>
+      <form method="post" action="/ds/{ds_id}/simulate_clobber" style="margin:0">
+        <button class="btn danger" type="submit">💥 Simulate AI / Late-Night Ontology Clobber</button>
+      </form>
+    </div>
 
-    <h2>Current Live Sheet State ({len(rows_by_pk)} rows)</h2>
+    <h2>Current Live Sheet / Ontology State ({len(rows_by_pk)} nodes/rows)</h2>
     <table>
       <tr>{header_cells}</tr>
       {''.join(body_rows)}
     </table>
 
-    <h2>Git Commit Time-Machine &amp; 1-Click Undo</h2>
+    <h2>Git Commit Time-Machine &amp; 1-Click Atomic Undo</h2>
     <table>
       <tr><th>Commit</th><th>Timestamp</th><th>Author</th><th>What Changed</th><th>Time-Travel Action</th></tr>
       {''.join(commit_rows)}
     </table>
     """
     return render_template_string(BASE_HTML, content=content)
+
+
+@app.route("/ds/<int:ds_id>/simulate_clobber", methods=["POST"])
+def simulate_clobber(ds_id):
+    ds = q1("SELECT * FROM datasets WHERE id=?", (ds_id,))
+    if not ds:
+        return "Dataset not found", 404
+    commits = q("SELECT * FROM undo_commits WHERE dataset_id=? ORDER BY id DESC", (ds_id,))
+    head_commit = next((c for c in commits if not c["reverted"]), commits[0] if commits else None)
+    state = _deserialize_state(head_commit["atoms_json"]) if head_commit else {}
+
+    clobbered_count = 0
+    mutated_state = {}
+    for coord, atom in state.items():
+        if atom.formula_ast and clobbered_count == 0:
+            clobbered_count += 1
+            mutated_state[coord] = SemanticCellAtom(
+                table_name=atom.table_name,
+                row_key=atom.row_key,
+                col_key=atom.col_key,
+                raw_value="420_HALLUCINATED_STATIC_OVERRIDE",
+                formula_ast=None,
+                data_type="string",
+            )
+        else:
+            mutated_state[coord] = atom
+
+    if clobbered_count == 0 and mutated_state:
+        first_coord = sorted(mutated_state.keys())[0]
+        first_atom = mutated_state[first_coord]
+        clobbered_count = 1
+        mutated_state[first_coord] = SemanticCellAtom(
+            table_name=first_atom.table_name,
+            row_key=first_atom.row_key,
+            col_key=first_atom.col_key,
+            raw_value="CLOBBERED_BY_UNSUPERVISED_AGENT",
+            formula_ast=None,
+            data_type="string",
+        )
+
+    new_hash = _commit_dataset_state(
+        ds_id,
+        "Unsupervised_AIP_Agent / 11:45pm_Closer",
+        f"Simulated kinetic writeback: overwrote structural invariant with literal override on {ds['name']}!",
+        mutated_state,
+        formulas_clobbered=clobbered_count,
+    )
+    flash(
+        f"⚠ Simulated Ontology Clobber ({new_hash[:7]}): {clobbered_count} invariant/formula overwritten! Click '↶ Undo this commit' below to restore atomically."
+    )
+    return redirect(url_for("dataset_view", ds_id=ds_id))
 
 
 @app.route("/ds/<int:ds_id>/undo", methods=["POST"])

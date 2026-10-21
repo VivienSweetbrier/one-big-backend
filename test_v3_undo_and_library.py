@@ -164,6 +164,20 @@ def test_freemium_universal_undo_saas():
     assert b"THREAD-GOLD" in r_undo.data and b"=Qty*UnitCost" in r_undo.data
     print("  -> [PASSED] 1-Click Universal Undo restored deleted THREAD-GOLD row & recovered =Qty*UnitCost formula!")
 
+    # Verify Dataset 3 (Weed Store Ontology) & Dataset 4 (Palantir AIP / Foundry & Winnipeg Ontology Lab)
+    r_weed = client.get("/ds/3")
+    assert r_weed.status_code == 200 and b"420g looks fine bro" in r_weed.data
+    r_pal = client.get("/ds/4")
+    assert r_pal.status_code == 200 and b"48_HRS_HALLUCINATED_STATIC_OVERRIDE" in r_pal.data
+    print("  -> Verified Weed Store Ontology (/ds/3) & Palantir AIP / Winnipeg Ontology Lab (/ds/4) live")
+
+    # Undo Palantir AIP Ontology Clobber (commits 6 -> restore 5) and test Simulate Clobber button
+    r_pal_undo = client.post("/ds/4/undo", data={"target_commit_id": "6", "bad_commit_id": "7"}, follow_redirects=True)
+    assert r_pal_undo.status_code == 200 and b"=MIN_LEAD_TIME(CN_Rail, Hwy_75)" in r_pal_undo.data
+    r_sim = client.post("/ds/4/simulate_clobber", data={}, follow_redirects=True)
+    assert r_sim.status_code == 200 and b"420_HALLUCINATED_STATIC_OVERRIDE" in r_sim.data
+    print("  -> [PASSED] Palantir AIP Ontology Undo + Replayable Simulate Clobber verified!")
+
 
 def test_bayesian_queue_forecasting_and_autostaff():
     print("\n=== [TEST 5] Bayesian M/G/c Queue Forecasting (VivienSweetbrier/bayesian-queue) ===")
